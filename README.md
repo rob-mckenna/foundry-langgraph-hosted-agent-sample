@@ -98,14 +98,21 @@ export PYTHONPATH=src
 ```
 
 ## Run the standalone API locally
-```powershell
+```bash
 python -m uvicorn standalone_api.app:app --app-dir src --host 0.0.0.0 --port 8080
 ```
 
 Send a request:
 
 ```powershell
+# PowerShell
 Invoke-RestMethod -Method Post -Uri http://localhost:8080/chat -ContentType 'application/json' -Body '{"message":"What is the status of claim CLM-1001?","thread_id":"demo-thread-1"}'
+```
+
+```bash
+# Bash
+curl -s -X POST http://localhost:8080/chat -H "Content-Type: application/json" \
+  -d '{"message":"What is the status of claim CLM-1001?","thread_id":"demo-thread-1"}'
 ```
 
 ## Run with Docker Compose
