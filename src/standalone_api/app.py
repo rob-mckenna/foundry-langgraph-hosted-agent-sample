@@ -2,6 +2,7 @@ import os
 from functools import lru_cache
 
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_openai import AzureChatOpenAI
@@ -9,6 +10,8 @@ from langgraph.checkpoint.memory import MemorySaver
 from pydantic import BaseModel, Field
 
 from claims_agent.graph import build_graph
+
+load_dotenv()
 
 app = FastAPI(title="Claims Status Inquiry API", version="0.1.0")
 

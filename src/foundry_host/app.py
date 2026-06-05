@@ -4,6 +4,7 @@ from typing import Any, Mapping
 
 from agent_framework import AgentResponse, AgentSession, Message
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_openai import AzureChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
@@ -14,6 +15,8 @@ except ImportError:  # pragma: no cover - compatibility fallback for current pac
     from agent_framework_foundry_hosting import ResponsesHostServer
 
 from claims_agent.graph import build_graph
+
+load_dotenv()
 
 
 class LangGraphHostedAgent:
