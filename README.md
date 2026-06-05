@@ -80,10 +80,21 @@ AZURE_AI_MODEL_DEPLOYMENT_NAME=gpt-4.1
 ## Local setup
 Install dependencies:
 
-```powershell
+```bash
 python -m pip install -r requirements.txt
 az login
+```
+
+Set the Python path so imports resolve from `src/`:
+
+```powershell
+# PowerShell
 $env:PYTHONPATH='src'
+```
+
+```bash
+# Bash / macOS / Linux
+export PYTHONPATH=src
 ```
 
 ## Run the standalone API locally
