@@ -3,7 +3,7 @@ from typing import Any
 
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from langchain_core.messages import AIMessage, SystemMessage
-from langchain_openai import ChatOpenAI
+from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
 
@@ -12,7 +12,7 @@ from claims_agent.state import ClaimsAgentState
 from claims_agent.tools import CLAIMS_TOOLS
 
 
-def _build_default_model() -> ChatOpenAI:
+def _build_default_model() -> AzureChatOpenAI:
     azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "").strip().rstrip("/")
     azure_deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", "").strip()
     if not azure_endpoint or not azure_deployment:
@@ -25,10 +25,11 @@ def _build_default_model() -> ChatOpenAI:
         credential,
         "https://cognitiveservices.azure.com/.default",
     )
-    return ChatOpenAI(
-        model=azure_deployment,
-        base_url=f"{azure_endpoint}/openai/deployments/{azure_deployment}",
-        api_key=token_provider,
+    return AzureChatOpenAI(
+        azure_deployment=azure_deployment,
+        azure_endpoint=azure_endpoint,
+        azure_ad_token_provider=token_provider,
+        api_version="2024-12-01-preview",
     )
 
 

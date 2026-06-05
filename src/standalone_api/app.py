@@ -4,7 +4,7 @@ from functools import lru_cache
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from fastapi import FastAPI
 from langchain_core.messages import AIMessage, HumanMessage
-from langchain_openai import ChatOpenAI
+from langchain_openai import AzureChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from pydantic import BaseModel, Field
 
@@ -23,7 +23,7 @@ class ChatResponse(BaseModel):
     response: str
 
 
-def build_chat_model() -> ChatOpenAI:
+def build_chat_model() -> AzureChatOpenAI:
     endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "").strip().rstrip("/")
     deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", "").strip()
     if not endpoint or not deployment:
@@ -36,10 +36,11 @@ def build_chat_model() -> ChatOpenAI:
         credential,
         "https://cognitiveservices.azure.com/.default",
     )
-    return ChatOpenAI(
-        model=deployment,
-        base_url=f"{endpoint}/openai/deployments/{deployment}",
-        api_key=token_provider,
+    return AzureChatOpenAI(
+        azure_deployment=deployment,
+        azure_endpoint=endpoint,
+        azure_ad_token_provider=token_provider,
+        api_version="2024-12-01-preview",
     )
 
 

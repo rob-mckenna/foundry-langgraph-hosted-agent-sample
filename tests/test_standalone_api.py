@@ -23,14 +23,14 @@ def test_build_chat_model_uses_default_azure_credential(monkeypatch) -> None:
     class DummyCredential:
         pass
 
-    class DummyChatOpenAI:
+    class DummyAzureChatOpenAI:
         def __init__(self, **kwargs):
             captured["kwargs"] = kwargs
 
     monkeypatch.setenv("AZURE_OPENAI_ENDPOINT", "https://example.openai.azure.com/")
     monkeypatch.setenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4.1-mini")
     monkeypatch.setattr(standalone_app, "DefaultAzureCredential", DummyCredential)
-    monkeypatch.setattr(standalone_app, "ChatOpenAI", DummyChatOpenAI)
+    monkeypatch.setattr(standalone_app, "AzureChatOpenAI", DummyAzureChatOpenAI)
     monkeypatch.setattr(
         standalone_app,
         "get_bearer_token_provider",
@@ -39,11 +39,12 @@ def test_build_chat_model_uses_default_azure_credential(monkeypatch) -> None:
 
     model = standalone_app.build_chat_model()
 
-    assert isinstance(model, DummyChatOpenAI)
+    assert isinstance(model, DummyAzureChatOpenAI)
     assert captured["kwargs"] == {
-        "model": "gpt-4.1-mini",
-        "base_url": "https://example.openai.azure.com/openai/deployments/gpt-4.1-mini",
-        "api_key": "token::https://cognitiveservices.azure.com/.default::DummyCredential",
+        "azure_deployment": "gpt-4.1-mini",
+        "azure_endpoint": "https://example.openai.azure.com",
+        "azure_ad_token_provider": "token::https://cognitiveservices.azure.com/.default::DummyCredential",
+        "api_version": "2024-12-01-preview",
     }
 
 
