@@ -1,6 +1,7 @@
 import os
 from typing import Any
 
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from langchain_core.messages import AIMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
@@ -12,25 +13,22 @@ from claims_agent.tools import CLAIMS_TOOLS
 
 
 def _build_default_model() -> ChatOpenAI:
-    azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "").strip()
-    azure_api_key = os.getenv("AZURE_OPENAI_API_KEY", "").strip()
+    azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "").strip().rstrip("/")
     azure_deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", "").strip()
-    if azure_endpoint and azure_api_key and azure_deployment:
-        return ChatOpenAI(
-            model=azure_deployment,
-            api_key=azure_api_key,
-            base_url=f"{azure_endpoint.rstrip('/')}/openai/v1/",
+    if not azure_endpoint or not azure_deployment:
+        raise RuntimeError(
+            "Azure OpenAI configuration is required. Set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_DEPLOYMENT, then run az login before starting the agent."
         )
 
-    openai_api_key = os.getenv("OPENAI_API_KEY", "").strip()
-    if openai_api_key:
-        return ChatOpenAI(
-            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-            api_key=openai_api_key,
-        )
-
-    raise RuntimeError(
-        "No chat model configuration was found. Set OPENAI_API_KEY or the Azure OpenAI environment variables."
+    credential = DefaultAzureCredential()
+    token_provider = get_bearer_token_provider(
+        credential,
+        "https://cognitiveservices.azure.com/.default",
+    )
+    return ChatOpenAI(
+        model=azure_deployment,
+        base_url=f"{azure_endpoint}/openai/deployments/{azure_deployment}",
+        api_key=token_provider,
     )
 
 

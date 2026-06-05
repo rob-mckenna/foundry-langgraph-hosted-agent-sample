@@ -91,14 +91,10 @@ def mock_llm() -> MockLLM:
 @pytest.fixture()
 def environment_variables(monkeypatch: pytest.MonkeyPatch) -> dict[str, str]:
     env = {
-        "OPENAI_API_KEY": "test-openai-key",
-        "OPENAI_MODEL": "gpt-4o-mini",
-        "AZURE_OPENAI_API_KEY": "test-azure-openai-key",
         "AZURE_OPENAI_ENDPOINT": "https://example.openai.azure.com/",
-        "AZURE_OPENAI_CHAT_DEPLOYMENT_NAME": "gpt-4o-mini",
-        "AZURE_OPENAI_API_VERSION": "2024-10-21",
+        "AZURE_OPENAI_DEPLOYMENT": "gpt-4o-mini",
         "FOUNDRY_PROJECT_ENDPOINT": "https://example.services.ai.azure.com/api/projects/test-project",
-        "FOUNDRY_MODEL_DEPLOYMENT_NAME": "gpt-4o-mini",
+        "AZURE_AI_MODEL_DEPLOYMENT_NAME": "gpt-4o-mini",
     }
 
     for key, value in env.items():

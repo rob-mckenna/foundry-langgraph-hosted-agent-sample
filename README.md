@@ -63,22 +63,15 @@ The shared package under `src\claims_agent\` contains:
 Both hosts call the same `build_graph()` factory so behavior stays aligned.
 
 ## Environment configuration
-Copy `.env.example` to `.env` and populate one of these model configurations.
+Copy `.env.example` to `.env`, run `az login`, and populate the settings for the host you want to run.
 
-### Option 1: OpenAI for the standalone host
-```env
-OPENAI_API_KEY=your-key
-OPENAI_MODEL=gpt-4o-mini
-```
-
-### Option 2: Azure OpenAI for the standalone host
+### Azure OpenAI with DefaultAzureCredential (standalone host)
 ```env
 AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
-AZURE_OPENAI_API_KEY=your-key
 AZURE_OPENAI_DEPLOYMENT=gpt-4.1-mini
 ```
 
-### Microsoft Foundry host
+### Foundry with DefaultAzureCredential (Foundry host)
 ```env
 FOUNDRY_PROJECT_ENDPOINT=https://your-project.services.ai.azure.com/api/projects/your-project
 AZURE_AI_MODEL_DEPLOYMENT_NAME=gpt-4.1
@@ -89,6 +82,7 @@ Install dependencies:
 
 ```powershell
 python -m pip install -r requirements.txt
+az login
 $env:PYTHONPATH='src'
 ```
 

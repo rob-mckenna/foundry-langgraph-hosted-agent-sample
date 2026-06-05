@@ -1,6 +1,7 @@
 import os
 from functools import lru_cache
 
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from fastapi import FastAPI
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_openai import ChatOpenAI
@@ -23,25 +24,22 @@ class ChatResponse(BaseModel):
 
 
 def build_chat_model() -> ChatOpenAI:
-    azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "").strip()
-    azure_api_key = os.getenv("AZURE_OPENAI_API_KEY", "").strip()
-    azure_deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", "").strip()
-    if azure_endpoint and azure_api_key and azure_deployment:
-        return ChatOpenAI(
-            model=azure_deployment,
-            api_key=azure_api_key,
-            base_url=f"{azure_endpoint.rstrip('/')}/openai/v1/",
+    endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "").strip().rstrip("/")
+    deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", "").strip()
+    if not endpoint or not deployment:
+        raise RuntimeError(
+            "Standalone API requires AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_DEPLOYMENT. Run az login before starting the API."
         )
 
-    openai_api_key = os.getenv("OPENAI_API_KEY", "").strip()
-    if openai_api_key:
-        return ChatOpenAI(
-            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-            api_key=openai_api_key,
-        )
-
-    raise RuntimeError(
-        "Standalone API requires OPENAI_API_KEY or the Azure OpenAI environment variables."
+    credential = DefaultAzureCredential()
+    token_provider = get_bearer_token_provider(
+        credential,
+        "https://cognitiveservices.azure.com/.default",
+    )
+    return ChatOpenAI(
+        model=deployment,
+        base_url=f"{endpoint}/openai/deployments/{deployment}",
+        api_key=token_provider,
     )
 
 
