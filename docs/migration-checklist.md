@@ -501,6 +501,16 @@ If you only have 15 minutes, this is the migration story:
 
 ---
 
+## Official Microsoft references
+
+- [Use LangGraph with the Agent Service](https://learn.microsoft.com/en-us/azure/foundry/how-to/develop/langchain-agents) — Integrating LangGraph agents into Foundry's Agent Service
+- [Host LangGraph agents as Foundry hosted agents](https://learn.microsoft.com/en-us/azure/foundry/how-to/develop/langchain-hosted-agents) — The `ResponsesHostServer` hosting pattern and protocol
+- [Source docs on GitHub](https://github.com/MicrosoftDocs/azure-ai-docs/blob/main/articles/foundry/how-to/develop/langchain-agents.md) — Markdown source for the above
+- [Video: Host your agents on Foundry — LangChain + LangGraph](https://www.youtube.com/watch?v=mFZHq5mTt0A) — Video walkthrough
+- Key package: `pip install -U "langchain-azure-ai[hosting,tools,opentelemetry]>=1.2.4"`
+
+---
+
 ## Bottom line
 
 For this repo, the migration to MS Foundry is **mostly a hosting adaptation, not an agent rewrite**.

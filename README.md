@@ -134,3 +134,10 @@ python -m pytest
 2. Show `src\standalone_api\app.py` as the baseline containerized deployment.
 3. Show `src\foundry_host\app.py` and `deployment\foundry\agent.manifest.yaml` as the Foundry-specific delta.
 4. Close with the core message: **the agent logic did not need to be rewritten to move into Foundry hosting**.
+
+## Official Microsoft references
+
+- [Use LangGraph with the Agent Service](https://learn.microsoft.com/en-us/azure/foundry/how-to/develop/langchain-agents) — Integrating LangGraph agents into Foundry's Agent Service
+- [Host LangGraph agents as Foundry hosted agents](https://learn.microsoft.com/en-us/azure/foundry/how-to/develop/langchain-hosted-agents) — The `ResponsesHostServer` hosting pattern and protocol
+- [Source docs on GitHub](https://github.com/MicrosoftDocs/azure-ai-docs/blob/main/articles/foundry/how-to/develop/langchain-agents.md) — Markdown source for the above
+- [Video: Host your agents on Foundry — LangChain + LangGraph](https://www.youtube.com/watch?v=mFZHq5mTt0A) — Video walkthrough
