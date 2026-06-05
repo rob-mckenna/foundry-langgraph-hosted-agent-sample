@@ -1,0 +1,16 @@
+schema_version: 1
+name: claims-status-inquiry-agent
+description: Shared LangGraph claims processing assistant hosted in Microsoft Foundry.
+runtime:
+  type: container
+  dockerfile: deployment/foundry/Dockerfile
+  port: 8088
+hosting:
+  protocol: responses
+  entrypoint: python -m foundry_host.app
+environment:
+  required:
+    - FOUNDRY_PROJECT_ENDPOINT
+    - AZURE_AI_MODEL_DEPLOYMENT_NAME
+  optional:
+    - PORT
