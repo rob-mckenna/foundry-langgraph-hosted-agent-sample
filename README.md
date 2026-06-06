@@ -131,8 +131,24 @@ docker compose up --build
 The standalone container listens on `http://localhost:8080`.
 
 ## Run the Foundry host locally
-```powershell
+
+> **Note:** Stop the standalone API first — both hosts use port 8080 (from `.env`).
+
+```bash
 python -m foundry_host.app
+```
+
+Send a request (note: `/responses` endpoint, not `/chat`):
+
+```powershell
+# PowerShell
+Invoke-WebRequest -Uri http://localhost:8080/responses -Method POST -ContentType 'application/json' -Body '{"input":"What is the status of claim CLM-1001?"}'
+```
+
+```bash
+# Bash
+curl -s -X POST http://localhost:8080/responses -H "Content-Type: application/json" \
+  -d '{"input":"What is the status of claim CLM-1001?"}'
 ```
 
 This keeps the shared LangGraph agent intact and only changes host concerns such as authentication and the `ResponsesHostServer` wrapper.
