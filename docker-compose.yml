@@ -11,3 +11,8 @@ services:
       PORT: 8080
     ports:
       - "8080:8080"
+    volumes:
+      # Mount Azure CLI credentials so DefaultAzureCredential works inside the container.
+      # Windows: set AZURE_CONFIG_DIR=%USERPROFILE%\.azure before running docker compose.
+      # Linux/macOS: defaults to ~/.azure automatically.
+      - ${AZURE_CONFIG_DIR:-~/.azure}:/root/.azure:ro
