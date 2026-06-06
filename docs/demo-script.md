@@ -149,13 +149,13 @@ curl -s http://localhost:8080/chat -H "Content-Type: application/json" -d "{\"me
 ```powershell
 Get-Content docker-compose.yml
 Get-Content deployment\standalone\Dockerfile
-docker compose up --build
 ```
 
 **Call out explicitly**
 - `docker-compose.yml` maps port `8080:8080`.
 - `deployment\standalone\Dockerfile` starts `uvicorn standalone_api.app:app`.
 - This is a normal standalone hosting pattern any engineering team can start with.
+- **Demo tip:** Show the Docker files but don't run `docker compose up` live — `DefaultAzureCredential` needs `az login` which isn't available inside a Linux container on Windows. In production, Managed Identity handles this seamlessly. For the live demo, run locally (as shown above) where `az login` just works.
 
 ---
 

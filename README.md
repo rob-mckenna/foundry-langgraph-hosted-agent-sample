@@ -116,7 +116,15 @@ curl -s -X POST http://localhost:8080/chat -H "Content-Type: application/json" \
 ```
 
 ## Run with Docker Compose
-```powershell
+
+> **Note on authentication in Docker:** `DefaultAzureCredential` relies on your host's `az login` session, which is not available inside a Linux container on Windows (the token cache is DPAPI-encrypted and unreadable from Linux). For **local development and demos**, run without Docker using the commands above. For **production containers**, use Azure Managed Identity — no credentials needed. For **local Docker testing**, set service principal env vars in `.env`:
+> ```
+> AZURE_TENANT_ID=<your-tenant-id>
+> AZURE_CLIENT_ID=<your-sp-client-id>
+> AZURE_CLIENT_SECRET=<your-sp-secret>
+> ```
+
+```bash
 docker compose up --build
 ```
 
