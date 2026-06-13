@@ -32,3 +32,8 @@ output "ai_services_name" {
   description = "Name of the Microsoft Foundry AI Services account."
   value       = azurerm_cognitive_account.ai_services.name
 }
+
+output "foundry_project_endpoint" {
+  description = "Endpoint for the Microsoft Foundry project."
+  value       = "${azurerm_cognitive_account.ai_services.endpoint}api/projects/${var.foundry_project_name}"
+}

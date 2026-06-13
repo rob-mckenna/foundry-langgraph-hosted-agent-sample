@@ -43,6 +43,15 @@ resource "azurerm_cognitive_deployment" "model" {
   }
 }
 
+resource "azurerm_cognitive_account_project" "foundry" {
+  name                 = var.foundry_project_name
+  cognitive_account_id = azurerm_cognitive_account.ai_services.id
+  location             = local.location
+
+  project_kind = "Foundry"
+  description  = "Claims Foundry agent project"
+}
+
 resource "azurerm_role_assignment" "openai_user" {
   scope              = azurerm_cognitive_account.ai_services.id
   role_definition_id = local.cognitive_services_openai_user_role_definition_id

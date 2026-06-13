@@ -24,6 +24,9 @@ param CONTAINER_REGISTRY_NAME string = 'claimsfoundryacr'
 @description('Name for the Azure AI Services account.')
 param AI_SERVICES_NAME string = 'claims-foundry-ai'
 
+@description('Name for the Microsoft Foundry project.')
+param FOUNDRY_PROJECT_NAME string = 'claims-foundry-project'
+
 @description('Model to deploy (e.g. gpt-4.1, gpt-4o).')
 param AZURE_AI_MODEL_DEPLOYMENT_NAME string = 'gpt-4.1'
 
@@ -71,6 +74,16 @@ resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-
       name: AZURE_AI_MODEL_DEPLOYMENT_NAME
       version: AI_MODEL_VERSION
     }
+  }
+}
+
+resource foundryProject 'Microsoft.CognitiveServices/accounts/projects@2025-04-01-preview' = {
+  parent: aiServices
+  name: FOUNDRY_PROJECT_NAME
+  location: AZURE_LOCATION
+  properties: {
+    projectKind: 'Foundry'
+    description: 'Claims Foundry agent project'
   }
 }
 
@@ -186,7 +199,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'FOUNDRY_PROJECT_ENDPOINT'
-              value: aiServices.properties.endpoint
+              value: '${aiServices.properties.endpoint}api/projects/${FOUNDRY_PROJECT_NAME}'
             }
             {
               name: 'AZURE_AI_MODEL_DEPLOYMENT_NAME'
@@ -223,3 +236,4 @@ output managedIdentityPrincipalId string = managedIdentity.properties.principalI
 output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.properties.loginServer
 output aiServicesEndpoint string = aiServices.properties.endpoint
 output aiServicesName string = aiServices.name
+output foundryProjectEndpoint string = '${aiServices.properties.endpoint}api/projects/${FOUNDRY_PROJECT_NAME}'

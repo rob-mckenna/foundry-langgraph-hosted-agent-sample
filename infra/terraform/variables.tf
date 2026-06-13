@@ -49,6 +49,12 @@ variable "ai_services_name" {
   default     = "claims-foundry-ai"
 }
 
+variable "foundry_project_name" {
+  description = "Name for the Microsoft Foundry project."
+  type        = string
+  default     = "claims-foundry-project"
+}
+
 variable "azure_ai_model_deployment_name" {
   description = "Model deployment name (e.g. gpt-4.1, gpt-4o)."
   type        = string

@@ -54,7 +54,7 @@ resource "azurerm_container_app" "this" {
 
       env {
         name  = "FOUNDRY_PROJECT_ENDPOINT"
-        value = azurerm_cognitive_account.ai_services.endpoint
+        value = "${azurerm_cognitive_account.ai_services.endpoint}api/projects/${var.foundry_project_name}"
       }
 
       env {
