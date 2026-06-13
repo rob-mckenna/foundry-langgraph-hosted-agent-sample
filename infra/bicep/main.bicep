@@ -107,6 +107,9 @@ resource acrPullRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-
 resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: CONTAINER_APP_NAME
   location: AZURE_LOCATION
+  tags: {
+    'azd-service-name': 'claims-foundry-agent'
+  }
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
