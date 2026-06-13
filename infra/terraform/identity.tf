@@ -1,5 +1,5 @@
 locals {
-  cognitive_services_openai_user_role_definition_id = "/subscriptions/${var.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/e7332f29-82ae-436f-8842-345e8de50dd3"
+  cognitive_services_openai_user_role_definition_id = "/subscriptions/${var.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/5e0bd9bd-7b93-4f28-af87-19fc36ad61bd"
   acr_pull_role_definition_id                       = "/subscriptions/${var.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/7f951dda-4ed3-4680-a7ca-43fe172d538d"
 }
 

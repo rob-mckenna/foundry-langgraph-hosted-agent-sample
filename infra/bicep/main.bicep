@@ -39,7 +39,7 @@ param CONTAINER_CPU int = 1
 @description('Memory allocated to the container app.')
 param CONTAINER_MEMORY string = '2Gi'
 
-var cognitiveServicesOpenAiUserRoleDefinitionId = 'e7332f29-82ae-436f-8842-345e8de50dd3'
+var cognitiveServicesOpenAiUserRoleDefinitionId = '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
 var acrPullRoleDefinitionId = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
 
 // --- AI Services ---
