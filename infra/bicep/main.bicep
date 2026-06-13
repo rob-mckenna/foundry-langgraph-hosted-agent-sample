@@ -154,6 +154,10 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
               name: 'AZURE_AI_MODEL_DEPLOYMENT_NAME'
               value: AZURE_AI_MODEL_DEPLOYMENT_NAME
             }
+            {
+              name: 'AZURE_CLIENT_ID'
+              value: managedIdentity.properties.clientId
+            }
           ]
           resources: {
             cpu: CONTAINER_CPU
