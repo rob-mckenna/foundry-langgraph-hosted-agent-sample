@@ -3,7 +3,7 @@ metadata:
   template: foundry-langgraph-hosted-agent-sample
 infra:
   provider: bicep
-  path: infra
+  path: ../../../infra/bicep
 services:
   claims-foundry-agent:
     project: ../../..

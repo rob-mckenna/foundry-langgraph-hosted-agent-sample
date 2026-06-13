@@ -1,0 +1,115 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+env:
+  PYTHON_VERSION: '3.12'
+  AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME != '' && vars.AZURE_ENV_NAME || 'foundry-langgraph-hosted-agent-sample' }}
+  AZURE_LOCATION: ${{ vars.AZURE_LOCATION != '' && vars.AZURE_LOCATION || 'eastus2' }}
+  AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+  CONTAINER_APP_NAME: ${{ vars.CONTAINER_APP_NAME != '' && vars.CONTAINER_APP_NAME || 'claims-foundry-agent' }}
+  CONTAINER_APPS_ENVIRONMENT_NAME: ${{ vars.CONTAINER_APPS_ENVIRONMENT_NAME != '' && vars.CONTAINER_APPS_ENVIRONMENT_NAME || 'claims-foundry-env' }}
+  LOG_ANALYTICS_WORKSPACE_NAME: ${{ vars.LOG_ANALYTICS_WORKSPACE_NAME != '' && vars.LOG_ANALYTICS_WORKSPACE_NAME || 'claims-foundry-logs' }}
+  MANAGED_IDENTITY_NAME: ${{ vars.MANAGED_IDENTITY_NAME != '' && vars.MANAGED_IDENTITY_NAME || 'claims-foundry-agent-mi' }}
+  FOUNDRY_PROJECT_ENDPOINT: ${{ vars.FOUNDRY_PROJECT_ENDPOINT != '' && vars.FOUNDRY_PROJECT_ENDPOINT || secrets.FOUNDRY_PROJECT_ENDPOINT }}
+  AZURE_AI_MODEL_DEPLOYMENT_NAME: ${{ vars.AZURE_AI_MODEL_DEPLOYMENT_NAME != '' && vars.AZURE_AI_MODEL_DEPLOYMENT_NAME || 'gpt-4.1' }}
+  OPENAI_ACCOUNT_NAME: ${{ vars.OPENAI_ACCOUNT_NAME }}
+  CONTAINER_REGISTRY_NAME: ${{ vars.CONTAINER_REGISTRY_NAME }}
+
+jobs:
+  ci:
+    name: Lint and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Ruff
+        run: ruff check .
+
+      - name: Run tests
+        run: PYTHONPATH=src python -m pytest -q
+
+  deploy:
+    name: Provision and deploy to Azure
+    runs-on: ubuntu-latest
+    needs: ci
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Azure Developer CLI
+        uses: Azure/setup-azd@v2
+
+      - name: Log in to Azure with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Validate deployment settings
+        run: |
+          if [ -z "${FOUNDRY_PROJECT_ENDPOINT}" ]; then
+            echo "::error::Set FOUNDRY_PROJECT_ENDPOINT as a GitHub environment variable or secret for the production environment."
+            exit 1
+          fi
+
+      - name: Seed azd environment
+        working-directory: deployment/foundry/azd
+        run: |
+          azd env select "${AZURE_ENV_NAME}" >/dev/null 2>&1 || azd env new "${AZURE_ENV_NAME}" --no-prompt >/dev/null
+          azd env set AZURE_LOCATION "${AZURE_LOCATION}" >/dev/null
+          if [ -n "${AZURE_RESOURCE_GROUP}" ]; then
+            azd env set AZURE_RESOURCE_GROUP "${AZURE_RESOURCE_GROUP}" >/dev/null
+          fi
+          azd env set CONTAINER_APP_NAME "${CONTAINER_APP_NAME}" >/dev/null
+          azd env set CONTAINER_APPS_ENVIRONMENT_NAME "${CONTAINER_APPS_ENVIRONMENT_NAME}" >/dev/null
+          azd env set LOG_ANALYTICS_WORKSPACE_NAME "${LOG_ANALYTICS_WORKSPACE_NAME}" >/dev/null
+          azd env set MANAGED_IDENTITY_NAME "${MANAGED_IDENTITY_NAME}" >/dev/null
+          azd env set FOUNDRY_PROJECT_ENDPOINT "${FOUNDRY_PROJECT_ENDPOINT}" >/dev/null
+          azd env set AZURE_AI_MODEL_DEPLOYMENT_NAME "${AZURE_AI_MODEL_DEPLOYMENT_NAME}" >/dev/null
+          if [ -n "${OPENAI_ACCOUNT_NAME}" ]; then
+            azd env set OPENAI_ACCOUNT_NAME "${OPENAI_ACCOUNT_NAME}" >/dev/null
+          fi
+          if [ -n "${CONTAINER_REGISTRY_NAME}" ]; then
+            azd env set CONTAINER_REGISTRY_NAME "${CONTAINER_REGISTRY_NAME}" >/dev/null
+          fi
+
+      - name: Run azd provision
+        working-directory: deployment/foundry/azd
+        run: azd provision --no-prompt
+
+      - name: Run azd deploy
+        working-directory: deployment/foundry/azd
+        run: |
+          # Production auth stays passwordless: the Container App uses DefaultAzureCredential
+          # with managed identity after deployment, while this workflow authenticates with OIDC.
+          azd deploy --no-prompt

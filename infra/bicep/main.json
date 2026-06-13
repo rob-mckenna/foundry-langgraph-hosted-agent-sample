@@ -1,0 +1,265 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.33.93.31351",
+      "templateHash": "4505952863808294238"
+    }
+  },
+  "parameters": {
+    "AZURE_LOCATION": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Azure location for the demo resources."
+      }
+    },
+    "CONTAINER_APP_NAME": {
+      "type": "string",
+      "defaultValue": "claims-foundry-agent",
+      "metadata": {
+        "description": "Name for the Container App that hosts the Foundry agent."
+      }
+    },
+    "CONTAINER_APPS_ENVIRONMENT_NAME": {
+      "type": "string",
+      "defaultValue": "claims-foundry-env",
+      "metadata": {
+        "description": "Name for the Container Apps managed environment."
+      }
+    },
+    "LOG_ANALYTICS_WORKSPACE_NAME": {
+      "type": "string",
+      "defaultValue": "claims-foundry-logs",
+      "metadata": {
+        "description": "Name for the Log Analytics workspace."
+      }
+    },
+    "MANAGED_IDENTITY_NAME": {
+      "type": "string",
+      "defaultValue": "claims-foundry-agent-mi",
+      "metadata": {
+        "description": "Name for the user-assigned managed identity used by the container app."
+      }
+    },
+    "CONTAINER_IMAGE": {
+      "type": "string",
+      "defaultValue": "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest",
+      "metadata": {
+        "description": "Container image to run inside the Foundry agent container app."
+      }
+    },
+    "CONTAINER_REGISTRY_SERVER": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional Azure Container Registry login server. When provided, the managed identity will be used for image pulls."
+      }
+    },
+    "CONTAINER_REGISTRY_NAME": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional Azure Container Registry name in the current resource group. When provided, the managed identity receives AcrPull."
+      }
+    },
+    "FOUNDRY_PROJECT_ENDPOINT": {
+      "type": "string",
+      "metadata": {
+        "description": "Foundry project endpoint exposed to the container app as FOUNDRY_PROJECT_ENDPOINT."
+      }
+    },
+    "AZURE_AI_MODEL_DEPLOYMENT_NAME": {
+      "type": "string",
+      "defaultValue": "gpt-4.1",
+      "metadata": {
+        "description": "Model deployment name exposed to the container app as AZURE_AI_MODEL_DEPLOYMENT_NAME."
+      }
+    },
+    "OPENAI_ACCOUNT_NAME": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional Azure OpenAI account name in the current resource group used for the Cognitive Services OpenAI User role assignment."
+      }
+    },
+    "CONTAINER_CPU": {
+      "type": "int",
+      "defaultValue": 1,
+      "metadata": {
+        "description": "CPU allocated to the container app."
+      }
+    },
+    "CONTAINER_MEMORY": {
+      "type": "string",
+      "defaultValue": "2Gi",
+      "metadata": {
+        "description": "Memory allocated to the container app."
+      }
+    }
+  },
+  "variables": {
+    "cognitiveServicesOpenAiUserRoleDefinitionId": "e7332f29-82ae-436f-8842-345e8de50dd3",
+    "acrPullRoleDefinitionId": "7f951dda-4ed3-4680-a7ca-43fe172d538d"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2023-09-01",
+      "name": "[parameters('LOG_ANALYTICS_WORKSPACE_NAME')]",
+      "location": "[parameters('AZURE_LOCATION')]",
+      "properties": {
+        "sku": {
+          "name": "PerGB2018"
+        },
+        "retentionInDays": 30
+      }
+    },
+    {
+      "type": "Microsoft.App/managedEnvironments",
+      "apiVersion": "2024-03-01",
+      "name": "[parameters('CONTAINER_APPS_ENVIRONMENT_NAME')]",
+      "location": "[parameters('AZURE_LOCATION')]",
+      "properties": {
+        "appLogsConfiguration": {
+          "destination": "log-analytics",
+          "logAnalyticsConfiguration": {
+            "customerId": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', parameters('LOG_ANALYTICS_WORKSPACE_NAME')), '2023-09-01').customerId]",
+            "sharedKey": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces', parameters('LOG_ANALYTICS_WORKSPACE_NAME')), '2023-09-01').primarySharedKey]"
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('LOG_ANALYTICS_WORKSPACE_NAME'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+      "apiVersion": "2023-01-31",
+      "name": "[parameters('MANAGED_IDENTITY_NAME')]",
+      "location": "[parameters('AZURE_LOCATION')]"
+    },
+    {
+      "condition": "[not(empty(parameters('OPENAI_ACCOUNT_NAME')))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.CognitiveServices/accounts/{0}', parameters('OPENAI_ACCOUNT_NAME'))]",
+      "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts', parameters('OPENAI_ACCOUNT_NAME')), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('MANAGED_IDENTITY_NAME')), variables('cognitiveServicesOpenAiUserRoleDefinitionId'))]",
+      "properties": {
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('MANAGED_IDENTITY_NAME')), '2023-01-31').principalId]",
+        "principalType": "ServicePrincipal",
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('cognitiveServicesOpenAiUserRoleDefinitionId'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('MANAGED_IDENTITY_NAME'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('CONTAINER_REGISTRY_NAME')))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.ContainerRegistry/registries/{0}', parameters('CONTAINER_REGISTRY_NAME'))]",
+      "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', parameters('CONTAINER_REGISTRY_NAME')), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('MANAGED_IDENTITY_NAME')), variables('acrPullRoleDefinitionId'))]",
+      "properties": {
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('MANAGED_IDENTITY_NAME')), '2023-01-31').principalId]",
+        "principalType": "ServicePrincipal",
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('acrPullRoleDefinitionId'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('MANAGED_IDENTITY_NAME'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.App/containerApps",
+      "apiVersion": "2024-03-01",
+      "name": "[parameters('CONTAINER_APP_NAME')]",
+      "location": "[parameters('AZURE_LOCATION')]",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('MANAGED_IDENTITY_NAME')))]": {}
+        }
+      },
+      "properties": {
+        "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', parameters('CONTAINER_APPS_ENVIRONMENT_NAME'))]",
+        "configuration": {
+          "activeRevisionsMode": "Single",
+          "ingress": {
+            "external": true,
+            "targetPort": 8088,
+            "transport": "auto",
+            "allowInsecure": false
+          },
+          "registries": "[if(empty(parameters('CONTAINER_REGISTRY_SERVER')), createArray(), createArray(createObject('server', parameters('CONTAINER_REGISTRY_SERVER'), 'identity', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('MANAGED_IDENTITY_NAME')))))]"
+        },
+        "template": {
+          "containers": [
+            {
+              "name": "foundry-agent",
+              "image": "[parameters('CONTAINER_IMAGE')]",
+              "env": [
+                {
+                  "name": "PORT",
+                  "value": "8088"
+                },
+                {
+                  "name": "FOUNDRY_PROJECT_ENDPOINT",
+                  "value": "[parameters('FOUNDRY_PROJECT_ENDPOINT')]"
+                },
+                {
+                  "name": "AZURE_AI_MODEL_DEPLOYMENT_NAME",
+                  "value": "[parameters('AZURE_AI_MODEL_DEPLOYMENT_NAME')]"
+                }
+              ],
+              "resources": {
+                "cpu": "[parameters('CONTAINER_CPU')]",
+                "memory": "[parameters('CONTAINER_MEMORY')]"
+              }
+            }
+          ],
+          "scale": {
+            "minReplicas": 1,
+            "maxReplicas": 1
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(resourceId('Microsoft.ContainerRegistry/registries', parameters('CONTAINER_REGISTRY_NAME')), 'Microsoft.Authorization/roleAssignments', guid(resourceId('Microsoft.ContainerRegistry/registries', parameters('CONTAINER_REGISTRY_NAME')), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('MANAGED_IDENTITY_NAME')), variables('acrPullRoleDefinitionId')))]",
+        "[resourceId('Microsoft.App/managedEnvironments', parameters('CONTAINER_APPS_ENVIRONMENT_NAME'))]",
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('MANAGED_IDENTITY_NAME'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "containerAppId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.App/containerApps', parameters('CONTAINER_APP_NAME'))]"
+    },
+    "containerAppName": {
+      "type": "string",
+      "value": "[parameters('CONTAINER_APP_NAME')]"
+    },
+    "containerAppFqdn": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('CONTAINER_APP_NAME')), '2024-03-01').configuration.ingress.fqdn]"
+    },
+    "containerAppsEnvironmentId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.App/managedEnvironments', parameters('CONTAINER_APPS_ENVIRONMENT_NAME'))]"
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('LOG_ANALYTICS_WORKSPACE_NAME'))]"
+    },
+    "managedIdentityClientId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('MANAGED_IDENTITY_NAME')), '2023-01-31').clientId]"
+    },
+    "managedIdentityPrincipalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('MANAGED_IDENTITY_NAME')), '2023-01-31').principalId]"
+    }
+  }
+}

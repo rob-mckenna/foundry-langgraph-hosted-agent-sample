@@ -94,7 +94,7 @@ docker push "${FULL_IMAGE}"
 
 az deployment group create \
   --resource-group "${RESOURCE_GROUP}" \
-  --template-file "${AZD_DIR}/infra/main.bicep" \
+  --template-file "${REPO_ROOT}/infra/bicep/main.bicep" \
   --parameters \
     AZURE_LOCATION="${LOCATION}" \
     CONTAINER_APP_NAME="${CONTAINER_APP_NAME}" \

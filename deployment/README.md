@@ -86,9 +86,43 @@ Behavior:
 - if `azd` is installed, the script seeds the azd environment, runs `azd provision`, then runs `azd deploy`
 - if `azd` is not installed, the script falls back to Azure CLI, builds and pushes the Foundry image, and deploys the Bicep template directly
 
+## GitHub Actions automation
+
+The repository now includes two GitHub Actions workflows for Azure delivery with **OIDC/federated credentials only** — no API keys or client secrets:
+
+- `.github/workflows/deploy.yml` runs lint + tests on pushes to `main`, then provisions and deploys the Microsoft Foundry Container App with `azd provision` and `azd deploy` in the `production` environment.
+- `.github/workflows/build-image.yml` builds and pushes the standalone and Microsoft Foundry Docker images to ACR when application or Docker assets change on `main`.
+
+### Required GitHub environment secrets
+
+Set these in the `production` environment:
+
+- `AZURE_CLIENT_ID`
+- `AZURE_TENANT_ID`
+- `AZURE_SUBSCRIPTION_ID`
+- `ACR_NAME` (for image publishing)
+
+### Recommended GitHub environment variables
+
+Use environment variables for non-secret deployment settings such as:
+
+- `FOUNDRY_PROJECT_ENDPOINT`
+- `AZURE_ENV_NAME`
+- `AZURE_LOCATION`
+- `AZURE_RESOURCE_GROUP`
+- `CONTAINER_APP_NAME`
+- `CONTAINER_APPS_ENVIRONMENT_NAME`
+- `LOG_ANALYTICS_WORKSPACE_NAME`
+- `MANAGED_IDENTITY_NAME`
+- `AZURE_AI_MODEL_DEPLOYMENT_NAME`
+- `OPENAI_ACCOUNT_NAME`
+- `CONTAINER_REGISTRY_NAME`
+
+At runtime, the deployed Container Apps continue to authenticate with `DefaultAzureCredential` and managed identity, so production stays passwordless end-to-end.
+
 ## Foundry infrastructure details
 
-`deployment/foundry/azd/infra/main.bicep` now provisions:
+`infra/bicep/main.bicep` now provisions:
 
 - Log Analytics workspace
 - Container Apps environment
