@@ -11,7 +11,7 @@ def test_build_foundry_model_uses_azure_endpoint_and_token_provider(monkeypatch)
         def __init__(self, **kwargs):
             captured["kwargs"] = kwargs
 
-    monkeypatch.setenv("FOUNDRY_PROJECT_ENDPOINT", "https://project.example.test/")
+    monkeypatch.setenv("FOUNDRY_PROJECT_ENDPOINT", "https://project.example.test/api/projects/my-project")
     monkeypatch.setenv("AZURE_AI_MODEL_DEPLOYMENT_NAME", "gpt-4.1-mini")
     monkeypatch.setattr(foundry_app, "DefaultAzureCredential", DummyCredential)
     monkeypatch.setattr(foundry_app, "AzureChatOpenAI", DummyAzureChatOpenAI)
