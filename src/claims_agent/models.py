@@ -24,3 +24,12 @@ class BenefitSummary(BaseModel):
     copay: str
     out_of_pocket_max: str
     covered_services: list[str]
+
+
+class PriorAuthorizationRecord(BaseModel):
+    auth_id: str
+    member_id: str
+    procedure_code: str
+    status: str = Field(description="Prior authorization status.")
+    requested_date: str
+    decision_date: str | None = None

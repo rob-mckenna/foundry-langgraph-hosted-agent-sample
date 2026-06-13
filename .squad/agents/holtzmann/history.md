@@ -8,3 +8,4 @@
 
 ## Learnings
 
+- Polished `docs/demo-script.md` and `README.md` to match the live code paths, ports, endpoints, and environment variables; the Foundry host story should be presented as `LangGraphHostedAgent` plus `ResponsesHostServer(agent)` on port `8088`.

@@ -8,6 +8,7 @@ How to decide who handles what.
 |-----------|----------|----------|
 | Architecture & design | Holtzmann | Demo flow, project structure, code review |
 | Backend / agent logic | Patty | LangGraph agent, containerization, Foundry integration |
+| Frontend & UI | Gozer | HTML/CSS/JS, user-facing interfaces, accessibility |
 | Testing & validation | Abby | Write tests, verify agent behavior, edge cases |
 | Code review | Holtzmann | Review PRs, check quality, suggest improvements |
 | Scope & priorities | Holtzmann | What to build next, trade-offs, decisions |

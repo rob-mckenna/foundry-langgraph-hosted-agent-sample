@@ -1,5 +1,3 @@
-from types import SimpleNamespace
-
 import foundry_host.app as foundry_app
 
 

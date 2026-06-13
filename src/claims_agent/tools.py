@@ -1,6 +1,12 @@
 from langchain_core.tools import tool
 
-from claims_agent.data_access import get_benefit_by_plan_code, get_claim_by_id, get_member_by_id
+from claims_agent.data_access import (
+    get_benefit_by_plan_code,
+    get_claim_by_id,
+    get_claims_by_member_id,
+    get_member_by_id,
+    get_prior_authorization_by_id,
+)
 
 
 @tool
@@ -14,6 +20,24 @@ def lookup_claim_status(claim_id: str) -> dict:
             "message": "No claim was found for that claim ID.",
         }
     return {"found": True, **claim.model_dump(mode="json")}
+
+
+@tool
+def search_claims_by_member(member_id: str) -> dict:
+    """Return all claims associated with a member ID."""
+    claims = get_claims_by_member_id(member_id)
+    if not claims:
+        return {
+            "member_id": member_id,
+            "found": False,
+            "message": "No claims were found for that member ID.",
+        }
+    return {
+        "member_id": member_id,
+        "found": True,
+        "claim_count": len(claims),
+        "claims": [claim.model_dump(mode="json") for claim in claims],
+    }
 
 
 @tool
@@ -42,4 +66,23 @@ def get_benefit_summary(plan_code: str) -> dict:
     return {"found": True, **benefit.model_dump(mode="json")}
 
 
-CLAIMS_TOOLS = [lookup_claim_status, check_member_eligibility, get_benefit_summary]
+@tool
+def get_prior_authorization_status(auth_id: str) -> dict:
+    """Look up a prior authorization by authorization ID and return its status details."""
+    prior_authorization = get_prior_authorization_by_id(auth_id)
+    if prior_authorization is None:
+        return {
+            "auth_id": auth_id,
+            "found": False,
+            "message": "No prior authorization was found for that authorization ID.",
+        }
+    return {"found": True, **prior_authorization.model_dump(mode="json")}
+
+
+CLAIMS_TOOLS = [
+    lookup_claim_status,
+    search_claims_by_member,
+    check_member_eligibility,
+    get_benefit_summary,
+    get_prior_authorization_status,
+]

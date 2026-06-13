@@ -468,7 +468,7 @@ For a customer migration, these are the reassuring parts:
 This repo still uses the same `build_graph(...)` function in both deployment models.
 
 ### You do **not** need to rewrite tools
-`lookup_claim_status`, `check_member_eligibility`, and `get_benefit_summary` remain unchanged in `src/claims_agent/tools.py`.
+`lookup_claim_status`, `search_claims_by_member`, `check_member_eligibility`, `get_benefit_summary`, and `get_prior_authorization_status` remain shared in `src/claims_agent/tools.py`.
 
 ### You do **not** need to rewrite prompts
 The same `CLAIMS_ASSISTANT_SYSTEM_PROMPT` is used.

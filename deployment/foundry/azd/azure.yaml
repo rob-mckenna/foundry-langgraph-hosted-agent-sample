@@ -6,8 +6,8 @@ infra:
   path: infra
 services:
   claims-foundry-agent:
-    project: ..
+    project: ../../..
     language: python
     host: containerapp
     docker:
-      path: ../Dockerfile
+      path: deployment/foundry/Dockerfile

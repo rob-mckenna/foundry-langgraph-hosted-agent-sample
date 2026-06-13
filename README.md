@@ -2,7 +2,7 @@
 
 This sample implements one LangGraph-powered claims inquiry assistant and exposes it in two hosting models:
 
-- **Standalone**: FastAPI + Docker with a simple `/chat` endpoint
+- **Standalone**: FastAPI + Docker with `/chat` and `/chat/history` endpoints
 - **Microsoft Foundry**: `ResponsesHostServer` wrapping the same shared graph
 
 The demo message is straightforward: **same graph, same tools, different hosting surface**.
@@ -11,8 +11,10 @@ The demo message is straightforward: **same graph, same tools, different hosting
 The assistant acts as a **Claims Processing Assistant** for a health insurance payor. It can:
 
 - look up claim status by claim ID
+- search all claims for a member by member ID
 - check member eligibility by member ID
 - provide benefit summaries by plan code
+- check prior authorization status by authorization ID
 
 All answers use deterministic mock data so the demo stays stable and repeatable.
 
@@ -49,6 +51,11 @@ foundry-langgraph-hosted-agent-sample/
 │     └─ azd/
 ├─ docs/
 │  └─ demo-script.md
+├─ frontend/
+│  ├─ index.html
+│  ├─ styles.css
+│  ├─ app.js
+│  └─ README.md
 └─ tests/
 ```
 
@@ -57,8 +64,8 @@ The shared package under `src\claims_agent\` contains:
 
 - a `StateGraph` tool-calling loop
 - the payor-specific system prompt
-- deterministic claims, members, and benefits data
-- three tools for claim status, eligibility, and benefits
+- deterministic claims, members, benefits, and prior authorization data
+- five tools for claim status, member claim search, eligibility, benefits, and prior authorization status
 
 Both hosts call the same `build_graph()` factory so behavior stays aligned.
 
@@ -75,6 +82,8 @@ AZURE_OPENAI_DEPLOYMENT=gpt-4.1-mini
 ```env
 FOUNDRY_PROJECT_ENDPOINT=https://your-project.services.ai.azure.com/api/projects/your-project
 AZURE_AI_MODEL_DEPLOYMENT_NAME=gpt-4.1
+# Optional override when running the Foundry host locally
+PORT=8088
 ```
 
 ## Local setup
@@ -102,6 +111,17 @@ export PYTHONPATH=src
 python -m uvicorn standalone_api.app:app --app-dir src --host 0.0.0.0 --port 8080
 ```
 
+## Run the sample frontend
+
+The static frontend lives in `frontend/` and talks to the standalone API at `http://localhost:8080/chat`.
+
+```bash
+cd frontend
+python3 -m http.server 8000
+```
+
+Then open `http://localhost:8000` in your browser, or open `frontend/index.html` directly.
+
 Send a request:
 
 ```powershell
@@ -113,6 +133,12 @@ Invoke-RestMethod -Method Post -Uri http://localhost:8080/chat -ContentType 'app
 # Bash
 curl -s -X POST http://localhost:8080/chat -H "Content-Type: application/json" \
   -d '{"message":"What is the status of claim CLM-1001?","thread_id":"demo-thread-1"}'
+```
+
+Fetch conversation history for a thread:
+
+```bash
+curl -s "http://localhost:8080/chat/history?thread_id=demo-thread-1"
 ```
 
 ## Run with Docker Compose
@@ -132,9 +158,10 @@ The standalone container listens on `http://localhost:8080`.
 
 ## Run the Foundry host locally
 
-> **Note:** Stop the standalone API first — both hosts use port 8080 (from `.env`).
+The Foundry host defaults to port `8088`. If your `.env` still has `PORT=8080` for other workflows, override it in the shell before you start the host.
 
 ```bash
+export PORT=8088
 python -m foundry_host.app
 ```
 
@@ -142,16 +169,16 @@ Send a request (note: `/responses` endpoint, not `/chat`):
 
 ```powershell
 # PowerShell
-Invoke-WebRequest -Uri http://localhost:8080/responses -Method POST -ContentType 'application/json' -Body '{"input":"What is the status of claim CLM-1001?"}'
+Invoke-WebRequest -Uri http://localhost:8088/responses -Method POST -ContentType 'application/json' -Body '{"input":"What is the status of claim CLM-1001?"}'
 ```
 
 ```bash
 # Bash
-curl -s -X POST http://localhost:8080/responses -H "Content-Type: application/json" \
+curl -s -X POST http://localhost:8088/responses -H "Content-Type: application/json" \
   -d '{"input":"What is the status of claim CLM-1001?"}'
 ```
 
-This keeps the shared LangGraph agent intact and only changes host concerns such as authentication and the `ResponsesHostServer` wrapper.
+This keeps the shared LangGraph agent intact and only changes host concerns such as authentication, the `LangGraphHostedAgent` adapter, and the `ResponsesHostServer` wrapper.
 
 ## Tests
 ```powershell

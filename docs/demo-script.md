@@ -66,12 +66,14 @@ Get-Content README.md
 
 ### `tools.py`
 **Speaker track**
-> "There are only three tools, and they map cleanly to common payor service scenarios."
+> "There are five tools, and they map cleanly to common payor service scenarios including claim lookup, member claim search, eligibility, benefits, and prior authorization status."
 
 **Call out explicitly**
 - `lookup_claim_status(claim_id)`
+- `search_claims_by_member(member_id)`
 - `check_member_eligibility(member_id)`
 - `get_benefit_summary(plan_code)`
+- `get_prior_authorization_status(auth_id)`
 - Each tool returns deterministic mock data so the demo is stable.
 
 ### `prompts.py`
@@ -169,10 +171,10 @@ Get-Content deployment\standalone\Dockerfile
 
 | Concern | Standalone (`src\standalone_api\app.py`) | Foundry (`src\foundry_host\app.py`) | What to say |
 |---|---|---|---|
-| Shared agent logic | `build_graph(model=build_chat_model(), checkpointer=MemorySaver())` | `graph = build_graph(model=model)` | "Both hosts call the same `build_graph()` factory." |
-| Model/auth flow | Direct Azure OpenAI settings: `AZURE_OPENAI_ENDPOINT` + `AZURE_OPENAI_DEPLOYMENT`; token scope is Cognitive Services | Foundry project settings: `FOUNDRY_PROJECT_ENDPOINT` + `AIProjectClient`; token scope is `https://ai.azure.com/.default` | "The auth path changes, not the agent logic." |
-| Server wrapper | FastAPI app with a `/chat` endpoint | `ResponsesHostServer(graph).run(port=port)` | "Standalone is a custom REST wrapper; Foundry is a protocol-compliant agent host." |
-| Session/state handling | `MemorySaver()` configured in the standalone process | Foundry host manages agent sessions through the Responses host runtime | "Foundry takes on more of the enterprise runtime responsibility." |
+| Shared agent logic | `build_graph(model=build_chat_model(), checkpointer=MemorySaver())` | `graph = build_graph(model=model, checkpointer=MemorySaver())` | "Both hosts call the same `build_graph()` factory." |
+| Model/auth flow | Direct Azure OpenAI settings: `AZURE_OPENAI_ENDPOINT` + `AZURE_OPENAI_DEPLOYMENT`; token scope is Cognitive Services | Foundry host settings: `FOUNDRY_PROJECT_ENDPOINT` + `AZURE_AI_MODEL_DEPLOYMENT_NAME`; token scope is still Cognitive Services | "The config source changes, not the agent logic." |
+| Server wrapper | FastAPI app with a `/chat` endpoint | `LangGraphHostedAgent(graph)` behind `ResponsesHostServer(agent).run(port=port)` | "Standalone is a custom REST wrapper; Foundry is a protocol-compliant agent host." |
+| Session/state handling | `MemorySaver()` configured in the standalone process | `MemorySaver()` is still used, and `LangGraphHostedAgent` maps Foundry session IDs to LangGraph thread IDs | "The checkpointing story stays simple while Foundry adds the hosting protocol." |
 | Deployment artifact | Container only | Requires `deployment\foundry\agent.manifest.yaml` | "This manifest tells Foundry how to run and expose the agent." |
 
 ### Specific lines to emphasize
@@ -183,10 +185,10 @@ Get-Content deployment\standalone\Dockerfile
 - `/chat` accepts `message` + `thread_id`.
 
 **From `src\foundry_host\app.py`**
-- `AIProjectClient(endpoint=endpoint, credential=credential)` changes the integration point.
-- `project.get_openai_client()` gives the Foundry-connected OpenAI client base URL.
-- `graph = build_graph(model=model)` is unchanged agent assembly.
-- `ResponsesHostServer(graph).run(port=port)` swaps in the Foundry-native server.
+- `build_foundry_model()` reads `FOUNDRY_PROJECT_ENDPOINT`, `AZURE_AI_MODEL_DEPLOYMENT_NAME`, and optional `AZURE_AI_API_VERSION`.
+- `graph = build_graph(model=model, checkpointer=checkpointer)` is unchanged agent assembly with the same `MemorySaver()` pattern.
+- `LangGraphHostedAgent.run(...)` translates Responses messages plus session IDs into a LangGraph invoke call.
+- `ResponsesHostServer(agent).run(port=port)` swaps in the Foundry-native server, with `PORT` defaulting to `8088`.
 
 ### `agent.manifest.yaml`
 **Speaker track**
@@ -212,8 +214,11 @@ Use this only if you want to prove the Foundry host boots locally before deploym
 
 ```powershell
 $env:PYTHONPATH='src'
+$env:PORT='8088'
 python -m foundry_host.app
 ```
+
+**Important:** if `.env` still sets `PORT=8080` for Docker workflows, override it to `8088` in the demo shell before you launch the Foundry host.
 
 ### Optional Responses API example
 If you have a deployed Foundry endpoint and want to show the protocol shape, use the deployment URL that Foundry gives you:

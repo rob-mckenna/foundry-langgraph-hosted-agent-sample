@@ -15,6 +15,7 @@
 | Holtzmann | Lead | .squad/agents/holtzmann/charter.md | 🏗️ Lead |
 | Patty | Backend Dev | .squad/agents/patty/charter.md | 🔧 Backend |
 | Abby | Tester | .squad/agents/abby/charter.md | 🧪 Tester |
+| Gozer | Frontend Dev | .squad/agents/gozer/charter.md | ⚛️ Frontend |
 | Scribe | Scribe | .squad/agents/scribe/charter.md | 📋 Silent |
 | Ralph | Work Monitor | — | 🔄 Monitor |
 
