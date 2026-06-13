@@ -25,6 +25,10 @@ resource "azurerm_cognitive_account" "ai_services" {
   sku_name              = "S0"
   custom_subdomain_name = var.ai_services_name
   public_network_access_enabled = true
+
+  identity {
+    type = "SystemAssigned"
+  }
 }
 
 resource "azurerm_cognitive_deployment" "model" {

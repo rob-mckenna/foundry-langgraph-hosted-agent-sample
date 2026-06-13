@@ -54,6 +54,9 @@ resource aiServices 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = 
   sku: {
     name: 'S0'
   }
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     customSubDomainName: AI_SERVICES_NAME
     publicNetworkAccess: 'Enabled'
