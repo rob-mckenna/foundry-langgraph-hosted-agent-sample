@@ -1,0 +1,13 @@
+name: foundry-langgraph-hosted-agent-sample
+metadata:
+  template: foundry-langgraph-hosted-agent-sample
+infra:
+  provider: bicep
+  path: deployment/foundry/azd/infra
+services:
+  claims-foundry-agent:
+    project: .
+    language: python
+    host: containerapp
+    docker:
+      path: deployment/foundry/Dockerfile
