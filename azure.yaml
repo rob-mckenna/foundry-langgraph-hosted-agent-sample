@@ -26,7 +26,7 @@ services:
     language: docker
     docker:
       path: deployment/aca-hosted/Dockerfile
-      remoteBuild: true
+      remoteBuild: false
     config:
       container:
         resources:
