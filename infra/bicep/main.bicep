@@ -55,13 +55,19 @@ resource aiServices 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = 
     name: 'S0'
   }
   identity: {
-    type: 'SystemAssigned'
+    type: 'SystemAssigned,UserAssigned'
+    userAssignedIdentities: {
+      '${managedIdentity.id}': {}
+    }
   }
   properties: {
     customSubDomainName: AI_SERVICES_NAME
     publicNetworkAccess: 'Enabled'
     allowProjectManagement: true
   }
+  dependsOn: [
+    managedIdentity
+  ]
 }
 
 resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2025-04-01-preview' = {
