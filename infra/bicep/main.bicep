@@ -390,3 +390,4 @@ output aiServicesName string = aiServices.name
 output FOUNDRY_PROJECT_ENDPOINT string = '${aiServices.properties.endpoint}api/projects/${FOUNDRY_PROJECT_NAME}'
 output AZURE_AI_PROJECT_ID string = foundryProject.id
 output AZURE_AI_MODEL_DEPLOYMENT_NAME string = AZURE_AI_MODEL_DEPLOYMENT_NAME
+output AZURE_TENANT_ID string = tenant().tenantId
