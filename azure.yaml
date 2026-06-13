@@ -19,3 +19,10 @@ services:
     host: containerapp
     docker:
       path: deployment/aca-hosted/Dockerfile
+  # 3) Foundry Hosted Agent — deployed to Foundry Agent Service
+  claims-foundry-agent:
+    project: .
+    host: azure.ai.agent
+    language: python
+    config:
+      startupCommand: python -m aca_hosted.app
