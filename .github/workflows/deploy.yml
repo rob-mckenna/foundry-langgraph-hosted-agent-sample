@@ -22,10 +22,9 @@ env:
   CONTAINER_APPS_ENVIRONMENT_NAME: ${{ vars.CONTAINER_APPS_ENVIRONMENT_NAME != '' && vars.CONTAINER_APPS_ENVIRONMENT_NAME || 'claims-foundry-env' }}
   LOG_ANALYTICS_WORKSPACE_NAME: ${{ vars.LOG_ANALYTICS_WORKSPACE_NAME != '' && vars.LOG_ANALYTICS_WORKSPACE_NAME || 'claims-foundry-logs' }}
   MANAGED_IDENTITY_NAME: ${{ vars.MANAGED_IDENTITY_NAME != '' && vars.MANAGED_IDENTITY_NAME || 'claims-foundry-agent-mi' }}
-  FOUNDRY_PROJECT_ENDPOINT: ${{ vars.FOUNDRY_PROJECT_ENDPOINT != '' && vars.FOUNDRY_PROJECT_ENDPOINT || secrets.FOUNDRY_PROJECT_ENDPOINT }}
   AZURE_AI_MODEL_DEPLOYMENT_NAME: ${{ vars.AZURE_AI_MODEL_DEPLOYMENT_NAME != '' && vars.AZURE_AI_MODEL_DEPLOYMENT_NAME || 'gpt-4.1' }}
-  OPENAI_ACCOUNT_NAME: ${{ vars.OPENAI_ACCOUNT_NAME }}
-  CONTAINER_REGISTRY_NAME: ${{ vars.CONTAINER_REGISTRY_NAME }}
+  AI_SERVICES_NAME: ${{ vars.AI_SERVICES_NAME != '' && vars.AI_SERVICES_NAME || 'claims-foundry-ai' }}
+  CONTAINER_REGISTRY_NAME: ${{ vars.CONTAINER_REGISTRY_NAME != '' && vars.CONTAINER_REGISTRY_NAME || 'claimsfoundryacr' }}
 
 jobs:
   ci:
@@ -77,8 +76,8 @@ jobs:
 
       - name: Validate deployment settings
         run: |
-          if [ -z "${FOUNDRY_PROJECT_ENDPOINT}" ]; then
-            echo "::error::Set FOUNDRY_PROJECT_ENDPOINT as a GitHub environment variable or secret for the production environment."
+          if [ -z "${AI_SERVICES_NAME}" ]; then
+            echo "::error::Set AI_SERVICES_NAME as a GitHub environment variable."
             exit 1
           fi
 
@@ -94,14 +93,9 @@ jobs:
           azd env set CONTAINER_APPS_ENVIRONMENT_NAME "${CONTAINER_APPS_ENVIRONMENT_NAME}" >/dev/null
           azd env set LOG_ANALYTICS_WORKSPACE_NAME "${LOG_ANALYTICS_WORKSPACE_NAME}" >/dev/null
           azd env set MANAGED_IDENTITY_NAME "${MANAGED_IDENTITY_NAME}" >/dev/null
-          azd env set FOUNDRY_PROJECT_ENDPOINT "${FOUNDRY_PROJECT_ENDPOINT}" >/dev/null
           azd env set AZURE_AI_MODEL_DEPLOYMENT_NAME "${AZURE_AI_MODEL_DEPLOYMENT_NAME}" >/dev/null
-          if [ -n "${OPENAI_ACCOUNT_NAME}" ]; then
-            azd env set OPENAI_ACCOUNT_NAME "${OPENAI_ACCOUNT_NAME}" >/dev/null
-          fi
-          if [ -n "${CONTAINER_REGISTRY_NAME}" ]; then
-            azd env set CONTAINER_REGISTRY_NAME "${CONTAINER_REGISTRY_NAME}" >/dev/null
-          fi
+          azd env set AI_SERVICES_NAME "${AI_SERVICES_NAME}" >/dev/null
+          azd env set CONTAINER_REGISTRY_NAME "${CONTAINER_REGISTRY_NAME}" >/dev/null
 
       - name: Run azd provision
         working-directory: deployment/foundry/azd

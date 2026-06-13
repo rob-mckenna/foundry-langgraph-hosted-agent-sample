@@ -38,32 +38,33 @@ variable "container_image" {
 }
 
 variable "container_registry_name" {
-  description = "Optional Azure Container Registry name in the current resource group. When provided, the managed identity receives AcrPull."
+  description = "Name for the Azure Container Registry."
   type        = string
-  default     = ""
+  default     = "claimsfoundryacr"
 }
 
-variable "container_registry_server" {
-  description = "Optional Azure Container Registry login server. When provided, the managed identity is used for image pulls."
+variable "ai_services_name" {
+  description = "Name for the Azure AI Services (Microsoft Foundry) account."
   type        = string
-  default     = ""
-}
-
-variable "foundry_project_endpoint" {
-  description = "Microsoft Foundry project endpoint exposed to the container app as FOUNDRY_PROJECT_ENDPOINT."
-  type        = string
+  default     = "claims-foundry-ai"
 }
 
 variable "azure_ai_model_deployment_name" {
-  description = "Model deployment name exposed to the container app as AZURE_AI_MODEL_DEPLOYMENT_NAME."
+  description = "Model deployment name (e.g. gpt-4.1, gpt-4o)."
   type        = string
   default     = "gpt-4.1"
 }
 
-variable "openai_account_name" {
-  description = "Optional Azure OpenAI account name in the current resource group used for the Cognitive Services OpenAI User role assignment."
+variable "ai_model_version" {
+  description = "Model version to deploy."
   type        = string
-  default     = ""
+  default     = "2025-04-14"
+}
+
+variable "ai_model_capacity" {
+  description = "Model SKU capacity (thousands of tokens per minute)."
+  type        = number
+  default     = 10
 }
 
 variable "container_cpu" {

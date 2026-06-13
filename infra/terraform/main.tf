@@ -19,6 +19,5 @@ data "azurerm_resource_group" "this" {
 }
 
 locals {
-  location                  = data.azurerm_resource_group.this.location
-  container_registry_server = var.container_registry_server != "" ? var.container_registry_server : (var.container_registry_name != "" ? data.azurerm_container_registry.acr[0].login_server : "")
+  location = data.azurerm_resource_group.this.location
 }

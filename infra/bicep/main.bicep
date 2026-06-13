@@ -21,14 +21,17 @@ param CONTAINER_IMAGE string = 'mcr.microsoft.com/azuredocs/containerapps-hellow
 @description('Name for the Azure Container Registry.')
 param CONTAINER_REGISTRY_NAME string = 'claimsfoundryacr'
 
-@description('Foundry project endpoint exposed to the container app as FOUNDRY_PROJECT_ENDPOINT.')
-param FOUNDRY_PROJECT_ENDPOINT string
+@description('Name for the Azure AI Services account.')
+param AI_SERVICES_NAME string = 'claims-foundry-ai'
 
-@description('Model deployment name exposed to the container app as AZURE_AI_MODEL_DEPLOYMENT_NAME.')
+@description('Model to deploy (e.g. gpt-4.1, gpt-4o).')
 param AZURE_AI_MODEL_DEPLOYMENT_NAME string = 'gpt-4.1'
 
-@description('Optional Azure OpenAI account name in the current resource group used for the Cognitive Services OpenAI User role assignment.')
-param OPENAI_ACCOUNT_NAME string = ''
+@description('Model version to deploy.')
+param AI_MODEL_VERSION string = '2025-04-14'
+
+@description('Model SKU capacity (thousands of tokens per minute).')
+param AI_MODEL_CAPACITY int = 10
 
 @description('CPU allocated to the container app.')
 param CONTAINER_CPU int = 1
@@ -38,6 +41,40 @@ param CONTAINER_MEMORY string = '2Gi'
 
 var cognitiveServicesOpenAiUserRoleDefinitionId = 'e7332f29-82ae-436f-8842-345e8de50dd3'
 var acrPullRoleDefinitionId = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
+
+// --- AI Services ---
+
+resource aiServices 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
+  name: AI_SERVICES_NAME
+  location: AZURE_LOCATION
+  kind: 'AIServices'
+  sku: {
+    name: 'S0'
+  }
+  properties: {
+    customSubDomainName: AI_SERVICES_NAME
+    publicNetworkAccess: 'Enabled'
+    allowProjectManagement: true
+  }
+}
+
+resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = {
+  parent: aiServices
+  name: AZURE_AI_MODEL_DEPLOYMENT_NAME
+  sku: {
+    name: 'Standard'
+    capacity: AI_MODEL_CAPACITY
+  }
+  properties: {
+    model: {
+      format: 'OpenAI'
+      name: AZURE_AI_MODEL_DEPLOYMENT_NAME
+      version: AI_MODEL_VERSION
+    }
+  }
+}
+
+// --- Logging & Environment ---
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: LOG_ANALYTICS_WORKSPACE_NAME
@@ -64,6 +101,8 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01'
   }
 }
 
+// --- Identity & RBAC ---
+
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: MANAGED_IDENTITY_NAME
   location: AZURE_LOCATION
@@ -80,13 +119,9 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' =
   }
 }
 
-resource openAiAccount 'Microsoft.CognitiveServices/accounts@2023-05-01' existing = if (!empty(OPENAI_ACCOUNT_NAME)) {
-  name: OPENAI_ACCOUNT_NAME
-}
-
-resource openAiUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(OPENAI_ACCOUNT_NAME)) {
-  name: guid(openAiAccount.id, managedIdentity.id, cognitiveServicesOpenAiUserRoleDefinitionId)
-  scope: openAiAccount
+resource openAiUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(aiServices.id, managedIdentity.id, cognitiveServicesOpenAiUserRoleDefinitionId)
+  scope: aiServices
   properties: {
     principalId: managedIdentity.properties.principalId
     principalType: 'ServicePrincipal'
@@ -104,6 +139,8 @@ resource acrPullRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-
   }
 }
 
+// --- Container App ---
+
 resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: CONTAINER_APP_NAME
   location: AZURE_LOCATION
@@ -118,6 +155,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   }
   dependsOn: [
     acrPullRoleAssignment
+    openAiUserRoleAssignment
   ]
   properties: {
     managedEnvironmentId: containerAppsEnvironment.id
@@ -148,7 +186,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'FOUNDRY_PROJECT_ENDPOINT'
-              value: FOUNDRY_PROJECT_ENDPOINT
+              value: aiServices.properties.endpoint
             }
             {
               name: 'AZURE_AI_MODEL_DEPLOYMENT_NAME'
@@ -173,6 +211,8 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   }
 }
 
+// --- Outputs ---
+
 output containerAppId string = containerApp.id
 output containerAppName string = containerApp.name
 output containerAppFqdn string = containerApp.properties.configuration.ingress.fqdn
@@ -181,3 +221,5 @@ output logAnalyticsWorkspaceId string = logAnalytics.id
 output managedIdentityClientId string = managedIdentity.properties.clientId
 output managedIdentityPrincipalId string = managedIdentity.properties.principalId
 output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.properties.loginServer
+output aiServicesEndpoint string = aiServices.properties.endpoint
+output aiServicesName string = aiServices.name
