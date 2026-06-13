@@ -90,7 +90,12 @@ def build_foundry_model() -> AzureChatOpenAI:
     deployment = os.environ.get("AZURE_AI_MODEL_DEPLOYMENT_NAME", "gpt-4.1")
     api_version = os.environ.get("AZURE_AI_API_VERSION", "2024-10-21")
     credential = DefaultAzureCredential()
-    token_provider = get_bearer_token_provider(credential, "https://ai.azure.com/.default")
+    # Managed identities (hosted agent) require cognitiveservices audience;
+    # ai.azure.com audience only works for user/delegated tokens.
+    audience = os.environ.get(
+        "AZURE_AI_TOKEN_AUDIENCE", "https://cognitiveservices.azure.com/.default"
+    )
+    token_provider = get_bearer_token_provider(credential, audience)
     return AzureChatOpenAI(
         azure_endpoint=endpoint,
         azure_deployment=deployment,

@@ -23,8 +23,9 @@ def test_build_foundry_model_uses_azure_endpoint_and_token_provider(monkeypatch)
     assert captured["kwargs"]["azure_endpoint"] == "https://project.example.test"
     assert captured["kwargs"]["azure_deployment"] == "gpt-4.1-mini"
     assert captured["kwargs"]["api_version"] == "2024-10-21"
-    # token_provider is a callable, check it's passed
+    # token_provider is a callable, check it's passed with cognitiveservices audience
     assert callable(captured["kwargs"]["azure_ad_token_provider"])
+    assert captured["kwargs"]["azure_ad_token_provider"]() == "token::https://cognitiveservices.azure.com/.default"
 
 
 def test_main_wraps_graph_in_responses_host_server(monkeypatch) -> None:
