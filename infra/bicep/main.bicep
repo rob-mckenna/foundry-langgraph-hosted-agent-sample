@@ -55,19 +55,13 @@ resource aiServices 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = 
     name: 'S0'
   }
   identity: {
-    type: 'SystemAssigned,UserAssigned'
-    userAssignedIdentities: {
-      '${managedIdentity.id}': {}
-    }
+    type: 'SystemAssigned'
   }
   properties: {
     customSubDomainName: AI_SERVICES_NAME
     publicNetworkAccess: 'Enabled'
     allowProjectManagement: true
   }
-  dependsOn: [
-    managedIdentity
-  ]
 }
 
 resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2025-04-01-preview' = {
@@ -94,6 +88,9 @@ resource foundryProject 'Microsoft.CognitiveServices/accounts/projects@2025-04-0
     projectKind: 'Foundry'
     description: 'Claims Foundry agent project'
   }
+  dependsOn: [
+    modelDeployment
+  ]
 }
 
 // --- Logging & Environment ---
