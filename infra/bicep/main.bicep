@@ -155,6 +155,17 @@ resource acrPullRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-
   }
 }
 
+// Grant the Foundry project identity AcrPull so Hosted Agent Service can pull images
+resource acrPullForProjectRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(containerRegistry.id, foundryProject.id, acrPullRoleDefinitionId)
+  scope: containerRegistry
+  properties: {
+    principalId: foundryProject.identity.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrPullRoleDefinitionId)
+  }
+}
+
 // --- Container App ---
 
 resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
@@ -239,4 +250,5 @@ output managedIdentityPrincipalId string = managedIdentity.properties.principalI
 output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.properties.loginServer
 output aiServicesEndpoint string = aiServices.properties.endpoint
 output aiServicesName string = aiServices.name
-output foundryProjectEndpoint string = '${aiServices.properties.endpoint}api/projects/${FOUNDRY_PROJECT_NAME}'
+output FOUNDRY_PROJECT_ENDPOINT string = '${aiServices.properties.endpoint}api/projects/${FOUNDRY_PROJECT_NAME}'
+output AZURE_AI_MODEL_DEPLOYMENT_NAME string = AZURE_AI_MODEL_DEPLOYMENT_NAME
