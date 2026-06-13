@@ -11,4 +11,4 @@ COPY . .
 
 EXPOSE 8088
 
-CMD ["python", "-m", "foundry_host.app"]
+CMD ["python", "-m", "aca_hosted.app"]

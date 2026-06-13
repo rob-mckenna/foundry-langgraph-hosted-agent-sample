@@ -3,8 +3,11 @@ targetScope = 'resourceGroup'
 @description('Azure location for the demo resources.')
 param AZURE_LOCATION string = resourceGroup().location
 
-@description('Name for the Container App that hosts the Foundry agent.')
-param CONTAINER_APP_NAME string = 'claims-foundry-agent'
+@description('Name for the standalone Container App (Azure OpenAI direct, no Foundry).')
+param STANDALONE_CONTAINER_APP_NAME string = 'claims-standalone-agent'
+
+@description('Name for the ACA-hosted Container App (calls models via Foundry project).')
+param ACA_HOSTED_CONTAINER_APP_NAME string = 'claims-aca-agent'
 
 @description('Name for the Container Apps managed environment.')
 param CONTAINER_APPS_ENVIRONMENT_NAME string = 'claims-foundry-env'
@@ -12,10 +15,10 @@ param CONTAINER_APPS_ENVIRONMENT_NAME string = 'claims-foundry-env'
 @description('Name for the Log Analytics workspace.')
 param LOG_ANALYTICS_WORKSPACE_NAME string = 'claims-foundry-logs'
 
-@description('Name for the user-assigned managed identity used by the container app.')
+@description('Name for the user-assigned managed identity used by the container apps.')
 param MANAGED_IDENTITY_NAME string = 'claims-foundry-agent-mi'
 
-@description('Container image to run inside the Foundry agent container app.')
+@description('Placeholder container image (replaced by azd deploy).')
 param CONTAINER_IMAGE string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 
 @description('Name for the Azure Container Registry.')
@@ -36,10 +39,10 @@ param AI_MODEL_VERSION string = '2025-04-14'
 @description('Model SKU capacity (thousands of tokens per minute).')
 param AI_MODEL_CAPACITY int = 10
 
-@description('CPU allocated to the container app.')
+@description('CPU allocated to each container app.')
 param CONTAINER_CPU int = 1
 
-@description('Memory allocated to the container app.')
+@description('Memory allocated to each container app.')
 param CONTAINER_MEMORY string = '2Gi'
 
 var cognitiveServicesOpenAiUserRoleDefinitionId = '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
@@ -166,13 +169,81 @@ resource acrPullForProjectRoleAssignment 'Microsoft.Authorization/roleAssignment
   }
 }
 
-// --- Container App ---
+// --- Container App: Standalone (Azure OpenAI direct, no Foundry) ---
 
-resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
-  name: CONTAINER_APP_NAME
+resource standaloneContainerApp 'Microsoft.App/containerApps@2024-03-01' = {
+  name: STANDALONE_CONTAINER_APP_NAME
   location: AZURE_LOCATION
   tags: {
-    'azd-service-name': 'claims-foundry-agent'
+    'azd-service-name': 'claims-standalone-agent'
+  }
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${managedIdentity.id}': {}
+    }
+  }
+  dependsOn: [
+    acrPullRoleAssignment
+    openAiUserRoleAssignment
+  ]
+  properties: {
+    managedEnvironmentId: containerAppsEnvironment.id
+    configuration: {
+      activeRevisionsMode: 'Single'
+      ingress: {
+        external: true
+        targetPort: 8080
+        transport: 'auto'
+        allowInsecure: false
+      }
+      registries: [
+        {
+          server: containerRegistry.properties.loginServer
+          identity: managedIdentity.id
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'standalone-agent'
+          image: CONTAINER_IMAGE
+          env: [
+            {
+              name: 'AZURE_OPENAI_ENDPOINT'
+              value: aiServices.properties.endpoint
+            }
+            {
+              name: 'AZURE_OPENAI_DEPLOYMENT'
+              value: AZURE_AI_MODEL_DEPLOYMENT_NAME
+            }
+            {
+              name: 'AZURE_CLIENT_ID'
+              value: managedIdentity.properties.clientId
+            }
+          ]
+          resources: {
+            cpu: CONTAINER_CPU
+            memory: CONTAINER_MEMORY
+          }
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 1
+      }
+    }
+  }
+}
+
+// --- Container App: ACA-hosted (calls models via Foundry project) ---
+
+resource acaHostedContainerApp 'Microsoft.App/containerApps@2024-03-01' = {
+  name: ACA_HOSTED_CONTAINER_APP_NAME
+  location: AZURE_LOCATION
+  tags: {
+    'azd-service-name': 'claims-aca-agent'
   }
   identity: {
     type: 'UserAssigned'
@@ -204,7 +275,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
     template: {
       containers: [
         {
-          name: 'foundry-agent'
+          name: 'aca-hosted-agent'
           image: CONTAINER_IMAGE
           env: [
             {
@@ -240,9 +311,8 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
 
 // --- Outputs ---
 
-output containerAppId string = containerApp.id
-output containerAppName string = containerApp.name
-output containerAppFqdn string = containerApp.properties.configuration.ingress.fqdn
+output standaloneContainerAppFqdn string = standaloneContainerApp.properties.configuration.ingress.fqdn
+output acaHostedContainerAppFqdn string = acaHostedContainerApp.properties.configuration.ingress.fqdn
 output containerAppsEnvironmentId string = containerAppsEnvironment.id
 output logAnalyticsWorkspaceId string = logAnalytics.id
 output managedIdentityClientId string = managedIdentity.properties.clientId

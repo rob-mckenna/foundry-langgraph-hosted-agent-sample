@@ -5,9 +5,17 @@ infra:
   provider: bicep
   path: infra/bicep
 services:
-  claims-foundry-agent:
+  # 1) Standalone — LangGraph on Container Apps, Azure OpenAI direct (no Foundry)
+  claims-standalone-agent:
     project: .
     language: python
     host: containerapp
     docker:
-      path: deployment/foundry/Dockerfile
+      path: deployment/standalone/Dockerfile
+  # 2) ACA-hosted — LangGraph on Container Apps, calls models via Foundry project
+  claims-aca-agent:
+    project: .
+    language: python
+    host: containerapp
+    docker:
+      path: deployment/aca-hosted/Dockerfile

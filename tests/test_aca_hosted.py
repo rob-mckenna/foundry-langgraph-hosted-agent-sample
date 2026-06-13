@@ -1,4 +1,4 @@
-import foundry_host.app as foundry_app
+import aca_hosted.app as foundry_app
 
 
 def test_build_foundry_model_uses_azure_endpoint_and_token_provider(monkeypatch) -> None:
