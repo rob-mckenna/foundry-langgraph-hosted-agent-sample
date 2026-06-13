@@ -133,6 +133,7 @@ resource acrConnection 'Microsoft.CognitiveServices/accounts/projects/connection
     authType: 'ManagedIdentity'
     credentials: {
       resourceId: foundryProject.id
+      clientId: foundryProject.identity.principalId
     }
     metadata: {
       ResourceId: containerRegistry.id
