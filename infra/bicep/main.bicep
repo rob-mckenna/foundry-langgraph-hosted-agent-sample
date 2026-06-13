@@ -132,7 +132,7 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' =
   name: CONTAINER_REGISTRY_NAME
   location: AZURE_LOCATION
   sku: {
-    name: 'Basic'
+    name: 'Standard'
   }
   properties: {
     adminUserEnabled: false
