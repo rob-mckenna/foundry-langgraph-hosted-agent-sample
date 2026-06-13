@@ -6,10 +6,12 @@ infra:
   path: infra/bicep
 hooks:
   predeploy:
-    - run: scripts/clean-env.sh
-      shell: posix
-    - run: scripts/clean-env.ps1
-      shell: windows
+    posix:
+      shell: sh
+      run: scripts/clean-env.sh
+    windows:
+      shell: pwsh
+      run: scripts/clean-env.ps1
 services:
   # 1) Standalone — LangGraph on Container Apps, Azure OpenAI direct (no Foundry)
   claims-standalone-agent:
