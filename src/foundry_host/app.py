@@ -85,7 +85,7 @@ def build_foundry_model() -> AzureChatOpenAI:
     deployment = os.environ.get("AZURE_AI_MODEL_DEPLOYMENT_NAME", "gpt-4.1")
     api_version = os.environ.get("AZURE_AI_API_VERSION", "2024-12-01-preview")
     credential = DefaultAzureCredential()
-    token_provider = get_bearer_token_provider(credential, "https://cognitiveservices.azure.com/.default")
+    token_provider = get_bearer_token_provider(credential, "https://ai.azure.com/.default")
     return AzureChatOpenAI(
         azure_endpoint=endpoint,
         azure_deployment=deployment,

@@ -48,7 +48,7 @@ def build_chat_model() -> AzureChatOpenAI:
     credential = DefaultAzureCredential()
     token_provider = get_bearer_token_provider(
         credential,
-        "https://cognitiveservices.azure.com/.default",
+        "https://ai.azure.com/.default",
     )
     return AzureChatOpenAI(
         azure_deployment=deployment,

@@ -68,7 +68,7 @@ def test_build_chat_model_uses_default_azure_credential(monkeypatch) -> None:
     assert captured["kwargs"] == {
         "azure_deployment": "gpt-4.1-mini",
         "azure_endpoint": "https://example.openai.azure.com",
-        "azure_ad_token_provider": "token::https://cognitiveservices.azure.com/.default::DummyCredential",
+        "azure_ad_token_provider": "token::https://ai.azure.com/.default::DummyCredential",
         "api_version": "2024-12-01-preview",
     }
 
