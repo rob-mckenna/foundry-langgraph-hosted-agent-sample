@@ -18,11 +18,8 @@ param MANAGED_IDENTITY_NAME string = 'claims-foundry-agent-mi'
 @description('Container image to run inside the Foundry agent container app.')
 param CONTAINER_IMAGE string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 
-@description('Optional Azure Container Registry login server. When provided, the managed identity will be used for image pulls.')
-param CONTAINER_REGISTRY_SERVER string = ''
-
-@description('Optional Azure Container Registry name in the current resource group. When provided, the managed identity receives AcrPull.')
-param CONTAINER_REGISTRY_NAME string = ''
+@description('Name for the Azure Container Registry.')
+param CONTAINER_REGISTRY_NAME string = 'claimsfoundryacr'
 
 @description('Foundry project endpoint exposed to the container app as FOUNDRY_PROJECT_ENDPOINT.')
 param FOUNDRY_PROJECT_ENDPOINT string
@@ -72,12 +69,19 @@ resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-
   location: AZURE_LOCATION
 }
 
-resource openAiAccount 'Microsoft.CognitiveServices/accounts@2023-05-01' existing = if (!empty(OPENAI_ACCOUNT_NAME)) {
-  name: OPENAI_ACCOUNT_NAME
+resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
+  name: CONTAINER_REGISTRY_NAME
+  location: AZURE_LOCATION
+  sku: {
+    name: 'Basic'
+  }
+  properties: {
+    adminUserEnabled: false
+  }
 }
 
-resource acrRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' existing = if (!empty(CONTAINER_REGISTRY_NAME)) {
-  name: CONTAINER_REGISTRY_NAME
+resource openAiAccount 'Microsoft.CognitiveServices/accounts@2023-05-01' existing = if (!empty(OPENAI_ACCOUNT_NAME)) {
+  name: OPENAI_ACCOUNT_NAME
 }
 
 resource openAiUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(OPENAI_ACCOUNT_NAME)) {
@@ -90,9 +94,9 @@ resource openAiUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-
   }
 }
 
-resource acrPullRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(CONTAINER_REGISTRY_NAME)) {
-  name: guid(acrRegistry.id, managedIdentity.id, acrPullRoleDefinitionId)
-  scope: acrRegistry
+resource acrPullRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(containerRegistry.id, managedIdentity.id, acrPullRoleDefinitionId)
+  scope: containerRegistry
   properties: {
     principalId: managedIdentity.properties.principalId
     principalType: 'ServicePrincipal'
@@ -109,7 +113,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
       '${managedIdentity.id}': {}
     }
   }
-  dependsOn: empty(CONTAINER_REGISTRY_NAME) ? [] : [
+  dependsOn: [
     acrPullRoleAssignment
   ]
   properties: {
@@ -122,9 +126,9 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
         transport: 'auto'
         allowInsecure: false
       }
-      registries: empty(CONTAINER_REGISTRY_SERVER) ? [] : [
+      registries: [
         {
-          server: CONTAINER_REGISTRY_SERVER
+          server: containerRegistry.properties.loginServer
           identity: managedIdentity.id
         }
       ]
@@ -169,3 +173,4 @@ output containerAppsEnvironmentId string = containerAppsEnvironment.id
 output logAnalyticsWorkspaceId string = logAnalytics.id
 output managedIdentityClientId string = managedIdentity.properties.clientId
 output managedIdentityPrincipalId string = managedIdentity.properties.principalId
+output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.properties.loginServer
