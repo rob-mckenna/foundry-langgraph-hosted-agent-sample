@@ -1,0 +1,14 @@
+.git
+.github
+.squad
+.azure
+.venv
+__pycache__
+*.pyc
+*.egg-info
+docs
+tests
+scripts
+infra
+node_modules
+.ruff_cache
