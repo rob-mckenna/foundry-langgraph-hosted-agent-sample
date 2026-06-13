@@ -83,7 +83,7 @@ class LangGraphHostedAgent:
 def build_foundry_model() -> AzureChatOpenAI:
     endpoint = os.environ["FOUNDRY_PROJECT_ENDPOINT"].rstrip("/")
     deployment = os.environ.get("AZURE_AI_MODEL_DEPLOYMENT_NAME", "gpt-4.1")
-    api_version = os.environ.get("AZURE_AI_API_VERSION", "2024-12-01-preview")
+    api_version = os.environ.get("AZURE_AI_API_VERSION", "2024-10-21")
     credential = DefaultAzureCredential()
     token_provider = get_bearer_token_provider(credential, "https://ai.azure.com/.default")
     return AzureChatOpenAI(

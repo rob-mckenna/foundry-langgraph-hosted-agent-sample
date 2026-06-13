@@ -22,7 +22,7 @@ def test_build_foundry_model_uses_azure_endpoint_and_token_provider(monkeypatch)
     assert isinstance(model, DummyAzureChatOpenAI)
     assert captured["kwargs"]["azure_endpoint"] == "https://project.example.test"
     assert captured["kwargs"]["azure_deployment"] == "gpt-4.1-mini"
-    assert captured["kwargs"]["api_version"] == "2024-12-01-preview"
+    assert captured["kwargs"]["api_version"] == "2024-10-21"
     # token_provider is a callable, check it's passed
     assert callable(captured["kwargs"]["azure_ad_token_provider"])
 
