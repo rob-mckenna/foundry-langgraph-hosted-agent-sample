@@ -47,6 +47,11 @@ param CONTAINER_MEMORY string = '2Gi'
 
 var cognitiveServicesOpenAiUserRoleDefinitionId = '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
 var acrPullRoleDefinitionId = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
+var acrPushRoleDefinitionId = '8311e382-0749-4cb8-b61a-304f252e45ec'
+// Foundry User (formerly Azure AI User) — required for project identity to access account
+var foundryUserRoleDefinitionId = '53ca6127-db72-4b80-b1b0-d745d6d5456d'
+// Foundry Project Manager — required to deploy hosted agents
+var foundryProjectManagerRoleDefinitionId = 'eadc314b-1a2d-4efa-be10-5d325db5065e'
 
 // --- AI Services ---
 
@@ -104,6 +109,44 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
       name: 'PerGB2018'
     }
     retentionInDays: 30
+  }
+}
+
+resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: '${FOUNDRY_PROJECT_NAME}-appinsights'
+  location: AZURE_LOCATION
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    WorkspaceResourceId: logAnalytics.id
+  }
+}
+
+// --- Foundry Project Connections (required for Hosted Agent deployment) ---
+
+resource acrConnection 'Microsoft.CognitiveServices/accounts/projects/connections@2025-06-01' = {
+  parent: foundryProject
+  name: 'acr-connection'
+  properties: {
+    category: 'ContainerRegistry'
+    target: containerRegistry.properties.loginServer
+    authType: 'ManagedIdentity'
+    metadata: {
+      ResourceId: containerRegistry.id
+    }
+  }
+}
+
+resource appInsightsConnection 'Microsoft.CognitiveServices/accounts/projects/connections@2025-06-01' = {
+  parent: foundryProject
+  name: 'appinsights-connection'
+  properties: {
+    category: 'AppInsights'
+    target: applicationInsights.properties.ConnectionString
+    authType: 'ManagedIdentity'
+    metadata: {
+      ResourceId: applicationInsights.id
+    }
   }
 }
 
@@ -167,6 +210,29 @@ resource acrPullForProjectRoleAssignment 'Microsoft.Authorization/roleAssignment
     principalId: foundryProject.identity.principalId
     principalType: 'ServicePrincipal'
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrPullRoleDefinitionId)
+  }
+}
+
+// Grant the Foundry project identity Foundry User on the AI Services account
+// Required for the hosted agent to access models via the project endpoint
+resource foundryUserForProjectRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(aiServices.id, foundryProject.id, foundryUserRoleDefinitionId)
+  scope: aiServices
+  properties: {
+    principalId: foundryProject.identity.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', foundryUserRoleDefinitionId)
+  }
+}
+
+// Grant the deploying identity AcrPush so azd can push container images
+resource acrPushForDeployerRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(containerRegistry.id, managedIdentity.id, acrPushRoleDefinitionId)
+  scope: containerRegistry
+  properties: {
+    principalId: managedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrPushRoleDefinitionId)
   }
 }
 

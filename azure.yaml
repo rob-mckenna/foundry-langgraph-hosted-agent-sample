@@ -23,6 +23,13 @@ services:
   claims-foundry-agent:
     project: .
     host: azure.ai.agent
-    language: python
+    language: docker
+    docker:
+      path: deployment/aca-hosted/Dockerfile
+      remoteBuild: true
     config:
-      startupCommand: python -m aca_hosted.app
+      container:
+        resources:
+          cpu: "1"
+          memory: 2Gi
+        startupCommand: python -m aca_hosted.app
