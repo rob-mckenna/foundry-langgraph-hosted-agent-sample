@@ -47,7 +47,7 @@ var acrPullRoleDefinitionId = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
 
 // --- AI Services ---
 
-resource aiServices 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = {
+resource aiServices 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
   name: AI_SERVICES_NAME
   location: AZURE_LOCATION
   kind: 'AIServices'
@@ -58,13 +58,13 @@ resource aiServices 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = 
     type: 'SystemAssigned'
   }
   properties: {
-    customSubDomainName: AI_SERVICES_NAME
-    publicNetworkAccess: 'Enabled'
     allowProjectManagement: true
+    customSubDomainName: AI_SERVICES_NAME
+    disableLocalAuth: false
   }
 }
 
-resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2025-04-01-preview' = {
+resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2025-06-01' = {
   parent: aiServices
   name: AZURE_AI_MODEL_DEPLOYMENT_NAME
   sku: {
@@ -80,9 +80,15 @@ resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2025-
   }
 }
 
-// NOTE: Foundry project is created via post-provision hook (scripts/create-foundry-project.sh)
-// because ARM requires the system-assigned identity to propagate in Entra ID before
-// the project sub-resource can be created — this cannot be guaranteed in a single deployment.
+resource foundryProject 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = {
+  parent: aiServices
+  name: FOUNDRY_PROJECT_NAME
+  location: AZURE_LOCATION
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {}
+}
 
 // --- Logging & Environment ---
 
