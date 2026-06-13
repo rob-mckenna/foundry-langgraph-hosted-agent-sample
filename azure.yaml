@@ -4,6 +4,10 @@ metadata:
 infra:
   provider: bicep
   path: infra/bicep
+hooks:
+  postprovision:
+    shell: sh
+    run: scripts/create-foundry-project.sh
 services:
   claims-foundry-agent:
     project: .

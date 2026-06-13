@@ -47,14 +47,9 @@ resource "azurerm_cognitive_deployment" "model" {
   }
 }
 
-resource "azurerm_cognitive_account_project" "foundry" {
-  name                 = var.foundry_project_name
-  cognitive_account_id = azurerm_cognitive_account.ai_services.id
-  location             = local.location
-
-  project_kind = "Foundry"
-  description  = "Claims Foundry agent project"
-}
+# NOTE: Foundry project is created via post-provision script (scripts/create-foundry-project.sh)
+# because ARM requires the system-assigned identity to propagate in Entra ID before
+# the project sub-resource can be created.
 
 resource "azurerm_role_assignment" "openai_user" {
   scope              = azurerm_cognitive_account.ai_services.id

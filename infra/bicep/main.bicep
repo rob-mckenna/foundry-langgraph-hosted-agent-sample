@@ -80,18 +80,9 @@ resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2025-
   }
 }
 
-resource foundryProject 'Microsoft.CognitiveServices/accounts/projects@2025-04-01-preview' = {
-  parent: aiServices
-  name: FOUNDRY_PROJECT_NAME
-  location: AZURE_LOCATION
-  properties: {
-    projectKind: 'Foundry'
-    description: 'Claims Foundry agent project'
-  }
-  dependsOn: [
-    modelDeployment
-  ]
-}
+// NOTE: Foundry project is created via post-provision hook (scripts/create-foundry-project.sh)
+// because ARM requires the system-assigned identity to propagate in Entra ID before
+// the project sub-resource can be created — this cannot be guaranteed in a single deployment.
 
 // --- Logging & Environment ---
 
