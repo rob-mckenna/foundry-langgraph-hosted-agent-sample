@@ -131,6 +131,9 @@ resource acrConnection 'Microsoft.CognitiveServices/accounts/projects/connection
     category: 'ContainerRegistry'
     target: containerRegistry.properties.loginServer
     authType: 'ManagedIdentity'
+    credentials: {
+      resourceId: foundryProject.id
+    }
     metadata: {
       ResourceId: containerRegistry.id
     }
@@ -143,7 +146,10 @@ resource appInsightsConnection 'Microsoft.CognitiveServices/accounts/projects/co
   properties: {
     category: 'AppInsights'
     target: applicationInsights.properties.ConnectionString
-    authType: 'ManagedIdentity'
+    authType: 'ApiKey'
+    credentials: {
+      key: applicationInsights.properties.InstrumentationKey
+    }
     metadata: {
       ResourceId: applicationInsights.id
     }
