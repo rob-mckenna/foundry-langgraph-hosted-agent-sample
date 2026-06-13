@@ -1,43 +1,42 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
 name: foundry-langgraph-hosted-agent-sample
 metadata:
-  template: foundry-langgraph-hosted-agent-sample
-infra:
-  provider: bicep
-  path: infra/bicep
-hooks:
-  predeploy:
-    posix:
-      shell: sh
-      run: scripts/clean-env.sh
-    windows:
-      shell: pwsh
-      run: scripts/clean-env.ps1
+    template: foundry-langgraph-hosted-agent-sample
 services:
-  # 1) Standalone — LangGraph on Container Apps, Azure OpenAI direct (no Foundry)
-  claims-standalone-agent:
-    project: .
-    language: python
-    host: containerapp
-    docker:
-      path: deployment/standalone/Dockerfile
-  # 2) ACA-hosted — LangGraph on Container Apps, calls models via Foundry project
-  claims-aca-agent:
-    project: .
-    language: python
-    host: containerapp
-    docker:
-      path: deployment/aca-hosted/Dockerfile
-  # 3) Foundry Hosted Agent — deployed to Foundry Agent Service
-  claims-foundry-agent:
-    project: .
-    host: azure.ai.agent
-    language: docker
-    docker:
-      path: deployment/aca-hosted/Dockerfile
-      remoteBuild: false
-    config:
-      container:
-        resources:
-          cpu: "1"
-          memory: 2Gi
-        startupCommand: python -m aca_hosted.app
+    claims-aca-agent:
+        project: .
+        host: containerapp
+        language: python
+        docker:
+            path: deployment/aca-hosted/Dockerfile
+    claims-foundry-agent:
+        project: .
+        host: azure.ai.agent
+        language: docker
+        docker:
+            path: deployment/aca-hosted/Dockerfile
+            remoteBuild: false
+        config:
+            container:
+                resources:
+                    cpu: "1"
+                    memory: 2Gi
+                startupCommand: python -m aca_hosted.app
+    claims-standalone-agent:
+        project: .
+        host: containerapp
+        language: python
+        docker:
+            path: deployment/standalone/Dockerfile
+infra:
+    provider: bicep
+    path: infra/bicep
+hooks:
+    predeploy:
+        posix:
+            shell: sh
+            run: scripts/clean-env.sh
+        windows:
+            shell: pwsh
+            run: scripts/clean-env.ps1
