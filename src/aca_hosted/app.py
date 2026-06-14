@@ -81,12 +81,30 @@ class LangGraphHostedAgent:
 
 
 def build_foundry_model() -> AzureChatOpenAI:
-    # Use the AI Services endpoint directly for OpenAI chat completions.
-    # The project endpoint (/api/projects/...) doesn't support OpenAI API routing.
-    endpoint = os.environ.get(
+    # Determine the correct endpoint for model calls.
+    # In Foundry Hosted Agent mode, the agent identity only has Foundry User role,
+    # which grants model access through the project-scoped path. The runtime sets
+    # FOUNDRY_PROJECT_ENDPOINT to just the base URL, so we reconstruct the project path.
+    # In ACA-hosted mode, the user-assigned identity has Cognitive Services OpenAI User
+    # on the account, so the base URL works directly.
+    project_name = os.environ.get("FOUNDRY_PROJECT_NAME")
+    raw_endpoint = os.environ.get(
         "AZURE_OPENAI_ENDPOINT",
-        os.environ["FOUNDRY_PROJECT_ENDPOINT"].split("/api/projects")[0],
+        os.environ.get("FOUNDRY_PROJECT_ENDPOINT", ""),
     ).rstrip("/")
+
+    base_endpoint = raw_endpoint.split("/api/projects")[0]
+
+    if project_name and "/api/projects" not in raw_endpoint:
+        # Hosted agent: runtime gives base URL only; reconstruct project-scoped path
+        endpoint = f"{base_endpoint}/api/projects/{project_name}"
+    elif "/api/projects" in raw_endpoint:
+        # ACA-hosted: full project endpoint provided, strip for account-level access
+        endpoint = base_endpoint
+    else:
+        # Standalone or explicit AZURE_OPENAI_ENDPOINT
+        endpoint = base_endpoint
+
     deployment = os.environ.get("AZURE_AI_MODEL_DEPLOYMENT_NAME", "gpt-4.1")
     api_version = os.environ.get("AZURE_AI_API_VERSION", "2024-10-21")
     credential = DefaultAzureCredential()
