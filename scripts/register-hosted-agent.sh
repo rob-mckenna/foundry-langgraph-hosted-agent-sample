@@ -59,7 +59,8 @@ if [ "$HTTP_CODE" = "200" ]; then
           {\"protocol\": \"responses\", \"version\": \"1.0.0\"}
         ],
         \"environment_variables\": {
-          \"AZURE_AI_MODEL_DEPLOYMENT_NAME\": \"${MODEL_DEPLOYMENT}\"
+          \"AZURE_AI_MODEL_DEPLOYMENT_NAME\": \"${MODEL_DEPLOYMENT}\",
+          \"USE_MANAGED_IDENTITY\": \"true\"
         }
       }
     }")
@@ -82,7 +83,8 @@ else
           {\"protocol\": \"responses\", \"version\": \"1.0.0\"}
         ],
         \"environment_variables\": {
-          \"AZURE_AI_MODEL_DEPLOYMENT_NAME\": \"${MODEL_DEPLOYMENT}\"
+          \"AZURE_AI_MODEL_DEPLOYMENT_NAME\": \"${MODEL_DEPLOYMENT}\",
+          \"USE_MANAGED_IDENTITY\": \"true\"
         }
       }
     }")

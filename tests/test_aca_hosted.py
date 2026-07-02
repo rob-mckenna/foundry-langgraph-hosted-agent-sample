@@ -4,8 +4,7 @@ import aca_hosted.app as foundry_app
 def test_build_foundry_model_uses_azure_endpoint_and_token_provider(monkeypatch) -> None:
     captured = {}
 
-    class DummyCredential:
-        pass
+    sentinel_credential = object()
 
     class DummyAzureChatOpenAI:
         def __init__(self, **kwargs):
@@ -13,9 +12,13 @@ def test_build_foundry_model_uses_azure_endpoint_and_token_provider(monkeypatch)
 
     monkeypatch.setenv("FOUNDRY_PROJECT_ENDPOINT", "https://project.example.test/api/projects/my-project")
     monkeypatch.setenv("AZURE_AI_MODEL_DEPLOYMENT_NAME", "gpt-4.1-mini")
-    monkeypatch.setattr(foundry_app, "DefaultAzureCredential", DummyCredential)
+    monkeypatch.setattr(foundry_app, "build_credential", lambda: sentinel_credential)
     monkeypatch.setattr(foundry_app, "AzureChatOpenAI", DummyAzureChatOpenAI)
-    monkeypatch.setattr(foundry_app, "get_bearer_token_provider", lambda credential, scope: lambda: f"token::{scope}")
+    monkeypatch.setattr(
+        foundry_app,
+        "get_bearer_token_provider",
+        lambda credential, scope: lambda: f"token::{scope}" if credential is sentinel_credential else "unexpected",
+    )
 
     model = foundry_app.build_foundry_model()
 

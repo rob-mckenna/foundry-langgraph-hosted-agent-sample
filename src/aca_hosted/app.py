@@ -3,7 +3,7 @@ import uuid
 from typing import Any, Mapping
 
 from agent_framework import AgentResponse, AgentSession, Message
-from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from azure.identity import get_bearer_token_provider
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_openai import AzureChatOpenAI
@@ -14,6 +14,7 @@ try:
 except ImportError:  # pragma: no cover - compatibility fallback for current package layout.
     from agent_framework_foundry_hosting import ResponsesHostServer
 
+from claims_agent.azure_auth import build_credential
 from claims_agent.graph import build_graph
 
 load_dotenv()
@@ -107,7 +108,7 @@ def build_foundry_model() -> AzureChatOpenAI:
 
     deployment = os.environ.get("AZURE_AI_MODEL_DEPLOYMENT_NAME", "gpt-4.1")
     api_version = os.environ.get("AZURE_AI_API_VERSION", "2024-10-21")
-    credential = DefaultAzureCredential()
+    credential = build_credential()
     # Managed identities (hosted agent) require cognitiveservices audience;
     # ai.azure.com audience only works for user/delegated tokens.
     audience = os.environ.get(

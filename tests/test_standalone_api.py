@@ -45,8 +45,7 @@ class EmptyHistoryGraph:
 def test_build_chat_model_uses_default_azure_credential(monkeypatch) -> None:
     captured = {}
 
-    class DummyCredential:
-        pass
+    sentinel_credential = object()
 
     class DummyAzureChatOpenAI:
         def __init__(self, **kwargs):
@@ -54,12 +53,12 @@ def test_build_chat_model_uses_default_azure_credential(monkeypatch) -> None:
 
     monkeypatch.setenv("AZURE_OPENAI_ENDPOINT", "https://example.openai.azure.com/")
     monkeypatch.setenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4.1-mini")
-    monkeypatch.setattr(standalone_app, "DefaultAzureCredential", DummyCredential)
+    monkeypatch.setattr(standalone_app, "build_credential", lambda: sentinel_credential)
     monkeypatch.setattr(standalone_app, "AzureChatOpenAI", DummyAzureChatOpenAI)
     monkeypatch.setattr(
         standalone_app,
         "get_bearer_token_provider",
-        lambda credential, scope: f"token::{scope}::{type(credential).__name__}",
+        lambda credential, scope: f"token::{scope}::sentinel" if credential is sentinel_credential else "unexpected",
     )
 
     model = standalone_app.build_chat_model()
@@ -68,7 +67,7 @@ def test_build_chat_model_uses_default_azure_credential(monkeypatch) -> None:
     assert captured["kwargs"] == {
         "azure_deployment": "gpt-4.1-mini",
         "azure_endpoint": "https://example.openai.azure.com",
-        "azure_ad_token_provider": "token::https://ai.azure.com/.default::DummyCredential",
+        "azure_ad_token_provider": "token::https://ai.azure.com/.default::sentinel",
         "api_version": "2024-12-01-preview",
     }
 
