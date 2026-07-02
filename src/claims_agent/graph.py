@@ -1,12 +1,13 @@
 import os
 from typing import Any
 
-from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from azure.identity import get_bearer_token_provider
 from langchain_core.messages import AIMessage, SystemMessage
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
 
+from claims_agent.azure_auth import build_credential
 from claims_agent.prompts import CLAIMS_ASSISTANT_SYSTEM_PROMPT
 from claims_agent.state import ClaimsAgentState
 from claims_agent.tools import CLAIMS_TOOLS
@@ -20,7 +21,7 @@ def _build_default_model() -> AzureChatOpenAI:
             "Azure OpenAI configuration is required. Set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_DEPLOYMENT, then run az login before starting the agent."
         )
 
-    credential = DefaultAzureCredential()
+    credential = build_credential()
     token_provider = get_bearer_token_provider(
         credential,
         "https://ai.azure.com/.default",

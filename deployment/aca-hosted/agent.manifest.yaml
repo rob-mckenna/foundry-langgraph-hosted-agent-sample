@@ -14,3 +14,4 @@ environment:
     - AZURE_AI_MODEL_DEPLOYMENT_NAME
   optional:
     - PORT
+    - USE_MANAGED_IDENTITY

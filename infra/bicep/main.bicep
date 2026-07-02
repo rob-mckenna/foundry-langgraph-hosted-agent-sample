@@ -296,6 +296,10 @@ resource standaloneContainerApp 'Microsoft.App/containerApps@2024-03-01' = {
               name: 'AZURE_CLIENT_ID'
               value: managedIdentity.properties.clientId
             }
+            {
+              name: 'USE_MANAGED_IDENTITY'
+              value: 'true'
+            }
           ]
           resources: {
             cpu: CONTAINER_CPU
@@ -367,6 +371,10 @@ resource acaHostedContainerApp 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'AZURE_CLIENT_ID'
               value: managedIdentity.properties.clientId
+            }
+            {
+              name: 'USE_MANAGED_IDENTITY'
+              value: 'true'
             }
           ]
           resources: {

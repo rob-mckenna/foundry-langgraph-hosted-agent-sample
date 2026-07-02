@@ -2,7 +2,7 @@ import os
 from functools import lru_cache
 from typing import Any, Literal
 
-from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from azure.identity import get_bearer_token_provider
 from dotenv import load_dotenv
 from fastapi import FastAPI, Query
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
@@ -10,6 +10,7 @@ from langchain_openai import AzureChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from pydantic import BaseModel, Field
 
+from claims_agent.azure_auth import build_credential
 from claims_agent.graph import build_graph
 
 load_dotenv()
@@ -45,7 +46,7 @@ def build_chat_model() -> AzureChatOpenAI:
             "Standalone API requires AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_DEPLOYMENT. Run az login before starting the API."
         )
 
-    credential = DefaultAzureCredential()
+    credential = build_credential()
     token_provider = get_bearer_token_provider(
         credential,
         "https://ai.azure.com/.default",

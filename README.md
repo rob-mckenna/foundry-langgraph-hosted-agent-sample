@@ -136,6 +136,7 @@ AZURE_OPENAI_DEPLOYMENT=gpt-4.1-mini
 FOUNDRY_PROJECT_ENDPOINT=https://your-account.services.ai.azure.com/api/projects/your-project
 AZURE_AI_MODEL_DEPLOYMENT_NAME=gpt-4.1
 PORT=8088
+USE_MANAGED_IDENTITY=false
 ```
 
 > **Docker note:** `DefaultAzureCredential` relies on the host's `az login` token cache, which is DPAPI-encrypted and unavailable inside a Linux container on Windows. For local development, run without Docker. For local Docker testing, set service principal vars in `.env`:
@@ -144,6 +145,8 @@ PORT=8088
 > AZURE_CLIENT_ID=<sp-client-id>
 > AZURE_CLIENT_SECRET=<sp-secret>
 > ```
+>
+> **Managed identity note:** local machines and local Docker containers cannot use Azure IMDS at `169.254.169.254`. Leave `USE_MANAGED_IDENTITY=false` for local development. Azure deployments set `USE_MANAGED_IDENTITY=true` so the app can use the configured Container Apps or Foundry Hosted Agent identity.
 
 ## Local development
 
