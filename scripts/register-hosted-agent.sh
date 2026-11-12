@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# Register the container image as a Foundry Hosted Agent.
-# This script is called as a post-deploy hook by azd.
-# It creates (or updates) a hosted agent version in Foundry Agent Service.
+# Optional manual helper to register or update a Foundry Hosted Agent.
+# The repository-root azd deployment uses azure.yaml and agent.yaml instead.
 set -euo pipefail
 
 # --- Configuration ---

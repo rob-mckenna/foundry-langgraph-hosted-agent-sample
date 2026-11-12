@@ -1,6 +1,7 @@
 import os
 import uuid
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from agent_framework import AgentResponse, AgentSession, Message
 from azure.identity import get_bearer_token_provider

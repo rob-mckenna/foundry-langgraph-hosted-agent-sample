@@ -8,6 +8,7 @@ from typing import Any
 from unittest.mock import Mock
 
 import pytest
+from langchain_core.messages import AIMessage
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
@@ -28,7 +29,7 @@ def extract_text(value: Any) -> str:
         for key in ("output_text", "response", "content", "text", "answer", "result", "message"):
             if key in value:
                 return extract_text(value[key])
-        if "messages" in value and value["messages"]:
+        if value.get("messages"):
             return extract_text(value["messages"][-1])
         return json.dumps(value, default=str)
 
@@ -55,7 +56,7 @@ class MockLLM:
         self.calls: list[dict[str, Any]] = []
         self.bound_tools: list[Any] = []
 
-    def bind_tools(self, tools: list[Any], **_: Any) -> "MockLLM":
+    def bind_tools(self, tools: list[Any], **_: Any) -> MockLLM:
         self.bound_tools = list(tools)
         return self
 
@@ -72,12 +73,7 @@ class MockLLM:
         else:
             content = "I can help with claim status, eligibility, or benefit summary questions."
 
-        try:
-            from langchain_core.messages import AIMessage
-
-            return AIMessage(content=content)
-        except Exception:
-            return {"role": "assistant", "content": content}
+        return AIMessage(content=content)
 
     async def ainvoke(self, input: Any, config: Any = None, **kwargs: Any) -> Any:
         return self.invoke(input, config=config, **kwargs)

@@ -7,7 +7,8 @@ on:
     paths:
       - 'src/**'
       - 'requirements.txt'
-      - 'deployment/**/Dockerfile'
+      - 'deployment/standalone/Dockerfile'
+      - 'deployment/aca-hosted/Dockerfile'
 
 permissions:
   contents: read
@@ -15,7 +16,8 @@ permissions:
 
 env:
   STANDALONE_IMAGE_NAME: claims-standalone-api
-  FOUNDRY_IMAGE_NAME: claims-foundry-agent
+  ACA_HOSTED_IMAGE_NAME: claims-aca-agent
+  ACR_NAME: ${{ vars.CONTAINER_REGISTRY_NAME != '' && vars.CONTAINER_REGISTRY_NAME || 'claimsfoundryacr' }}
 
 jobs:
   build-and-push:
@@ -35,14 +37,10 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Resolve ACR login server
-        env:
-          ACR_NAME: ${{ secrets.ACR_NAME }}
         run: |
           echo "ACR_LOGIN_SERVER=$(az acr show --name "${ACR_NAME}" --query loginServer --output tsv)" >> "$GITHUB_ENV"
 
       - name: Log in to Azure Container Registry
-        env:
-          ACR_NAME: ${{ secrets.ACR_NAME }}
         run: az acr login --name "${ACR_NAME}"
 
       - name: Build and push standalone image
@@ -55,14 +53,14 @@ jobs:
           docker push "${ACR_LOGIN_SERVER}/${STANDALONE_IMAGE_NAME}:${GITHUB_SHA}"
           docker push "${ACR_LOGIN_SERVER}/${STANDALONE_IMAGE_NAME}:latest"
 
-      - name: Build and push Microsoft Foundry image
+      - name: Build and push ACA-hosted and Foundry-hosted image
         run: |
           # Production containers use DefaultAzureCredential with managed identity at runtime.
           # This workflow only publishes images to ACR by using GitHub OIDC for Azure auth.
           docker build \
-            -f deployment/foundry/Dockerfile \
-            -t "${ACR_LOGIN_SERVER}/${FOUNDRY_IMAGE_NAME}:${GITHUB_SHA}" \
-            -t "${ACR_LOGIN_SERVER}/${FOUNDRY_IMAGE_NAME}:latest" \
+            -f deployment/aca-hosted/Dockerfile \
+            -t "${ACR_LOGIN_SERVER}/${ACA_HOSTED_IMAGE_NAME}:${GITHUB_SHA}" \
+            -t "${ACR_LOGIN_SERVER}/${ACA_HOSTED_IMAGE_NAME}:latest" \
             .
-          docker push "${ACR_LOGIN_SERVER}/${FOUNDRY_IMAGE_NAME}:${GITHUB_SHA}"
-          docker push "${ACR_LOGIN_SERVER}/${FOUNDRY_IMAGE_NAME}:latest"
+          docker push "${ACR_LOGIN_SERVER}/${ACA_HOSTED_IMAGE_NAME}:${GITHUB_SHA}"
+          docker push "${ACR_LOGIN_SERVER}/${ACA_HOSTED_IMAGE_NAME}:latest"

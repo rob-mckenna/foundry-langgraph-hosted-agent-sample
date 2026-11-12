@@ -1,4 +1,4 @@
-import claims_agent.azure_auth as azure_auth
+from claims_agent import azure_auth
 
 
 def test_build_credential_excludes_managed_identity_by_default(monkeypatch) -> None:

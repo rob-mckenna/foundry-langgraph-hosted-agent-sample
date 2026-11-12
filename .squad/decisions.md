@@ -6,17 +6,18 @@
 
 **Status:** Approved
 
-Design a simple demo that shows one claims status inquiry agent implemented once in LangGraph, then exposed in two hosting models:
-1. standalone FastAPI + Docker
-2. Microsoft Foundry hosted agent service
+Design a simple demo that shows one claims status inquiry agent implemented once in LangGraph, then exposed in three hosting modes:
+1. standalone FastAPI on Azure Container Apps
+2. Agent Framework Responses host on Azure Container Apps
+3. Microsoft Foundry hosted agent service
 
 **Key decisions:**
 1. Keep one shared agent package (`src\claims_agent\`)
-2. Separate hosting adapters from business logic (`src\standalone_api\app.py`, `src\foundry_host\app.py`)
+2. Separate hosting adapters from business logic (`src\standalone_api\app.py`, `src\aca_hosted\app.py`)
 3. Use simple, deterministic payor tools (claim status, eligibility, benefits)
 4. Use one graph factory for both variants
 5. Keep prompts and domain language in shared files
-6. Make deployment assets runtime-specific (Docker for standalone, manifest/bicep for Foundry)
+6. Use the root `azure.yaml` and `infra\bicep` as the deployment source of truth; share the ACA-hosted image with Foundry
 7. Optimize the demo for side-by-side diff (show what stays the same vs. what changes)
 
 **Proposed structure:** Single shared agent core + thin runtime adapters for standalone and Foundry hosting.
@@ -33,9 +34,9 @@ Keep the demo UI in a new self-contained `frontend/` folder with no build toolin
 
 **Status:** Approved
 
-Standardize the demo narrative on standalone at port `8080` with `/chat`, and Foundry at port `8088` with `/responses`. Describe the Foundry host exactly as implemented: `LangGraphHostedAgent` adapts the shared graph, `ResponsesHostServer(agent)` exposes it, and the host reads `FOUNDRY_PROJECT_ENDPOINT` plus `AZURE_AI_MODEL_DEPLOYMENT_NAME`.
+Standardize the demo narrative on standalone at port `8080` with `/chat`, and ACA/Foundry at port `8088` with `/responses`. Describe the shared host exactly as implemented: `LangGraphHostedAgent` adapts the shared graph and `ResponsesHostServer(agent)` exposes it. The model endpoint and deployment configuration vary by hosting mode.
 
-**Rationale:** The previous script and README drifted from the actual code and could mislead a live demo. Keeping the docs aligned with the implementation preserves the portability story.
+**Rationale:** The deployment and documentation source of truth is the repository-root `azure.yaml`; the host implementation is `src\aca_hosted\app.py`. LangGraph `MemorySaver` state is in-memory and not durable across restarts. Keeping docs aligned with these facts preserves the portability story.
 
 ### Patty Capabilities Decision (2026-06-13)
 

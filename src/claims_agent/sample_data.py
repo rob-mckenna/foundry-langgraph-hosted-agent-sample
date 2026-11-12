@@ -1,4 +1,9 @@
-from claims_agent.models import BenefitSummary, ClaimRecord, MemberRecord, PriorAuthorizationRecord
+from claims_agent.models import (
+    BenefitSummary,
+    ClaimRecord,
+    MemberRecord,
+    PriorAuthorizationRecord,
+)
 
 CLAIMS = [
     ClaimRecord(claim_id="CLM-1001", member_id="MBR-2001", status="approved", service_date="2026-05-10", provider="Northwind Family Clinic", amount=245.30),
