@@ -1,4 +1,9 @@
-from claims_agent.models import BenefitSummary, ClaimRecord, MemberRecord, PriorAuthorizationRecord
+from claims_agent.models import (
+    BenefitSummary,
+    ClaimRecord,
+    MemberRecord,
+    PriorAuthorizationRecord,
+)
 from claims_agent.sample_data import BENEFITS, CLAIMS, MEMBERS, PRIOR_AUTHORIZATIONS
 
 _CLAIMS_BY_ID = {claim.claim_id.upper(): claim for claim in CLAIMS}

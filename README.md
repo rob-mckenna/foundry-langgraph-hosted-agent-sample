@@ -20,11 +20,11 @@ All answers use deterministic mock data so the demo stays stable and repeatable.
 |---|---|---|---|
 | **Framework** | FastAPI | Agent Framework + Foundry Hosting adapter | Agent Framework + Foundry Hosting adapter |
 | **Protocol** | Custom `/chat` + `/chat/history` | OpenAI Responses API (`/responses`) | OpenAI Responses API (`/responses`) |
-| **Auth to caller** | None (open endpoint) | Bearer token (you validate) | Bearer token (platform validates) |
+| **Auth to caller** | None (open endpoint) | No app-level auth; protect ingress separately | Foundry platform authentication |
 | **Model connection** | Direct Azure OpenAI endpoint | Via Foundry project (account-level access) | Via Foundry project (project-scoped access) |
 | **Identity** | User-assigned managed identity | User-assigned managed identity | Platform-managed agent identity |
 | **Infrastructure** | Azure Container Apps (you manage) | Azure Container Apps (you manage) | Foundry Agent Service (platform manages) |
-| **Session management** | Client provides `thread_id` | Automatic `agent_session_id` | Automatic `agent_session_id` + platform persistence |
+| **Session management** | Client provides `thread_id` | Runtime session ID maps to a LangGraph thread | Runtime session ID maps to a LangGraph thread |
 | **Foundry portal** | Not visible | Not visible | Visible (playground, monitoring, versioning) |
 | **Entry point** | `standalone_api/app.py` | `aca_hosted/app.py` | `aca_hosted/app.py` (same image) |
 
@@ -41,7 +41,7 @@ Agent Framework + LangGraph on Azure Container Apps, calling models via a Micros
 - Endpoint: `POST /responses` (OpenAI Responses protocol)
 
 ### Mode 3 — Foundry Hosted Agent
-Same `aca_hosted/app.py` code deployed to Microsoft Foundry Agent Service. The platform manages infrastructure, versioning, session isolation, and portal integration.
+Same `aca_hosted/app.py` code deployed to Microsoft Foundry Agent Service. The platform manages agent hosting, versioning, session IDs, and portal integration. LangGraph checkpoints use the in-memory `MemorySaver` and are not durable across process restarts.
 - Entry point: `src\aca_hosted\app.py` (same image as ACA-Hosted)
 - Manifest: `agent.yaml`
 - Endpoint: Foundry Agent Service URL (platform-assigned)
@@ -69,11 +69,13 @@ So are `tools.py`, `prompts.py`, `state.py`, and the deterministic sample data. 
 | What changes | Details |
 |---|---|
 | Infrastructure | You manage the Container App | Platform manages the agent runtime |
-| Auth | You validate Bearer tokens | Platform validates, agent identity is project-scoped |
+| Auth | No app-level auth; protect ingress separately | Foundry platform authenticates callers; the agent uses its configured identity |
 | Code | None — same Dockerfile, same `aca_hosted/app.py` |
-| Extras | Add `agent.yaml` manifest; register via `azd up` or `scripts/register-hosted-agent.sh` |
+| Extras | Add `agent.yaml`; root `azd up` deploys the hosted agent with the two Container Apps |
 
 The migration narrative: **start standalone → connect to a Foundry project → let Foundry host it**. Each step is incremental. The graph never changes.
+
+Both LangGraph hosts currently use the in-memory `MemorySaver`; conversation state is lost when the process restarts.
 
 ## Project layout
 
@@ -104,7 +106,6 @@ foundry-langgraph-hosted-agent-sample\
 │  │  └─ Dockerfile                    ← standalone container
 │  └─ aca-hosted\
 │     ├─ Dockerfile                    ← ACA-Hosted + Foundry Hosted Agent container
-│     └─ agent.manifest.yaml
 ├─ infra\
 │  └─ bicep\
 │     └─ main.bicep                    ← Azure infrastructure (IaC)
@@ -115,8 +116,8 @@ foundry-langgraph-hosted-agent-sample\
 ├─ scripts\
 │  ├─ clean-env.sh                     ← azd predeploy hook (posix)
 │  ├─ clean-env.ps1                    ← azd predeploy hook (windows)
-│  └─ register-hosted-agent.sh
-└─ tests\                              ← pytest suite (21 tests)
+│  └─ register-hosted-agent.sh          ← optional manual registration helper (not used by azd)
+└─ tests\                              ← pytest suite
 ```
 
 ## Environment configuration
@@ -189,7 +190,7 @@ azd auth login
 azd up
 ```
 
-The `azure.yaml` defines three services: `claims-standalone-agent` (Container App), `claims-aca-agent` (Container App), and `claims-foundry-agent` (Foundry Agent Service). The Bicep in `infra\bicep\main.bicep` handles permissions, managed identities, Foundry connections, and ACR wiring.
+The root `azure.yaml` is the deployment source of truth. It defines `claims-standalone-agent` and `claims-aca-agent` as Container Apps and `claims-foundry-agent` as a Foundry hosted agent. The Bicep in `infra/bicep/main.bicep` provisions shared Azure resources and the two Container Apps; azd deploys the Foundry hosted agent from `agent.yaml`. Runtime conversation checkpoints are in-memory and reset when the hosting process restarts.
 
 ## Testing deployed services
 

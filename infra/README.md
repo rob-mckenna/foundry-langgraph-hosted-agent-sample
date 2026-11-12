@@ -1,16 +1,16 @@
 # Infrastructure options
 
-This repository keeps Microsoft Foundry project hosting infrastructure in `infra/` with parallel Bicep and Terraform implementations. Both options provision the same Microsoft Foundry project hosting resources only: a Log Analytics workspace, a Container Apps environment, a user-assigned managed identity, a Container App listening on port `8088`, and optional RBAC for Azure OpenAI and ACR pulls.
+This repository keeps Azure infrastructure in `infra/` with Bicep and Terraform implementations. The root `azure.yaml` and Bicep template are the canonical `azd` path and provision shared Foundry resources plus the standalone and ACA-hosted Container Apps. Terraform is an alternate infrastructure configuration.
 
 ## Layout
 
-- `bicep/main.bicep` - azd/Bicep deployment for Microsoft Foundry project hosting
+- `bicep/main.bicep` - root azd/Bicep deployment for the shared resources and Container Apps
 - `bicep/parameters.json` - example parameter values for manual Bicep deployments
 - `terraform/` - equivalent Terraform configuration using the `azurerm` provider
 
 ## Bicep / azd
 
-The repo-root `azure.yaml` points azd at `infra/bicep`. The deployment-scoped `deployment/foundry/azd/azure.yaml` points to the same shared Bicep with a relative path.
+The repository-root `azure.yaml` points azd at `infra/bicep` and describes all three deployment services. Run `azd up` from the repository root.
 
 Example manual deployment:
 
@@ -31,4 +31,4 @@ Terraform expects an existing resource group, just like the Bicep template. Prov
 - `foundry_project_endpoint`
 - optionally `container_registry_name`, `container_registry_server`, and `openai_account_name`
 
-The Container App is configured to use managed identity and `DefaultAzureCredential`-compatible environment settings only. No API keys are included, and the templates provision Microsoft Foundry project resources only.
+The Terraform configuration covers the ACA-hosted Container App path. Runtime authentication uses managed identity and `DefaultAzureCredential`-compatible environment settings; no API keys are included. LangGraph uses `MemorySaver`, so conversation state is process-local and not durable across restarts.

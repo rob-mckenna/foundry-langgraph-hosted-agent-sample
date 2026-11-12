@@ -16,8 +16,8 @@ Show a health and life sciences payor audience that the **same LangGraph claims 
   - `src\claims_agent\tools.py`
   - `src\claims_agent\prompts.py`
   - `src\standalone_api\app.py`
-  - `src\foundry_host\app.py`
-  - `deployment\foundry\agent.manifest.yaml`
+  - `src\aca_hosted\app.py`
+  - `agent.yaml`
 - If you want the container demo ready to go, pre-build once with Docker so you do not wait on package install during the meeting.
 
 ### Pre-demo commands
@@ -162,51 +162,50 @@ Get-Content deployment\standalone\Dockerfile
 ---
 
 ## 4) The Foundry Diff (5 min)
-**What to show:** `src\standalone_api\app.py` next to `src\foundry_host\app.py`, then `deployment\foundry\agent.manifest.yaml`
+**What to show:** `src\standalone_api\app.py` next to `src\aca_hosted\app.py`, then `agent.yaml`
 
 **Transition line**
 > "Now the important part: moving to Foundry does not require us to rewrite the agent. We only change the hosting layer."
 
 ### Side-by-side story
 
-| Concern | Standalone (`src\standalone_api\app.py`) | Foundry (`src\foundry_host\app.py`) | What to say |
+| Concern | Standalone (`src\standalone_api\app.py`) | ACA/Foundry (`src\aca_hosted\app.py`) | What to say |
 |---|---|---|---|
 | Shared agent logic | `build_graph(model=build_chat_model(), checkpointer=MemorySaver())` | `graph = build_graph(model=model, checkpointer=MemorySaver())` | "Both hosts call the same `build_graph()` factory." |
-| Model/auth flow | Direct Azure OpenAI settings: `AZURE_OPENAI_ENDPOINT` + `AZURE_OPENAI_DEPLOYMENT`; token scope is Cognitive Services | Foundry host settings: `FOUNDRY_PROJECT_ENDPOINT` + `AZURE_AI_MODEL_DEPLOYMENT_NAME`; token scope is still Cognitive Services | "The config source changes, not the agent logic." |
+| Model/auth flow | Direct Azure OpenAI settings: `AZURE_OPENAI_ENDPOINT` + `AZURE_OPENAI_DEPLOYMENT`; token scope is `ai.azure.com` | Foundry host settings: endpoint plus `AZURE_AI_MODEL_DEPLOYMENT_NAME`; token audience defaults to `cognitiveservices.azure.com` | "The config source changes, not the agent logic." |
 | Server wrapper | FastAPI app with a `/chat` endpoint | `LangGraphHostedAgent(graph)` behind `ResponsesHostServer(agent).run(port=port)` | "Standalone is a custom REST wrapper; Foundry is a protocol-compliant agent host." |
-| Session/state handling | `MemorySaver()` configured in the standalone process | `MemorySaver()` is still used, and `LangGraphHostedAgent` maps Foundry session IDs to LangGraph thread IDs | "The checkpointing story stays simple while Foundry adds the hosting protocol." |
-| Deployment artifact | Container only | Requires `deployment\foundry\agent.manifest.yaml` | "This manifest tells Foundry how to run and expose the agent." |
+| Session/state handling | `MemorySaver()` configured in the standalone process | `MemorySaver()` is still used, and `LangGraphHostedAgent` maps runtime session IDs to LangGraph thread IDs | "State is process-local and is not durable across restarts." |
+| Deployment artifact | Container only | Root `agent.yaml` plus the shared `deployment\aca-hosted\Dockerfile` | "The root azd configuration deploys all three modes." |
 
 ### Specific lines to emphasize
 **From `src\standalone_api\app.py`**
 - `FastAPI(...)` creates a custom HTTP API.
 - `build_chat_model()` authenticates directly to Azure OpenAI.
-- `MemorySaver()` gives lightweight conversation continuity.
+- `MemorySaver()` gives lightweight, process-local conversation continuity; it does not persist across restarts.
 - `/chat` accepts `message` + `thread_id`.
 
-**From `src\foundry_host\app.py`**
-- `build_foundry_model()` reads `FOUNDRY_PROJECT_ENDPOINT`, `AZURE_AI_MODEL_DEPLOYMENT_NAME`, and optional `AZURE_AI_API_VERSION`.
+**From `src\aca_hosted\app.py`**
+- `build_foundry_model()` reads the endpoint, `AZURE_AI_MODEL_DEPLOYMENT_NAME`, and optional `AZURE_AI_API_VERSION` (default `2024-10-21`).
 - `graph = build_graph(model=model, checkpointer=checkpointer)` is unchanged agent assembly with the same `MemorySaver()` pattern.
 - `LangGraphHostedAgent.run(...)` translates Responses messages plus session IDs into a LangGraph invoke call.
 - `ResponsesHostServer(agent).run(port=port)` swaps in the Foundry-native server, with `PORT` defaulting to `8088`.
 
-### `agent.manifest.yaml`
+### `agent.yaml`
 **Speaker track**
 > "This is the deployment contract for Foundry. The graph did not change; the packaging and runtime metadata did."
 
 **Call out explicitly**
-- `runtime.type: container`
-- `dockerfile: deployment/foundry/Dockerfile`
-- `hosting.protocol: responses`
-- `entrypoint: python -m foundry_host.app`
-- Required environment variables: `FOUNDRY_PROJECT_ENDPOINT`, `AZURE_AI_MODEL_DEPLOYMENT_NAME`
+- `kind: hosted`
+- `dockerfile: deployment/aca-hosted/Dockerfile`
+- `protocols: responses`
+- `environment_variables` configures the model deployment and managed identity.
 
 **PowerShell commands for this section**
 ```powershell
 Get-Content src\standalone_api\app.py
-Get-Content src\foundry_host\app.py
-Get-Content deployment\foundry\agent.manifest.yaml
-git --no-pager diff --no-index src\standalone_api\app.py src\foundry_host\app.py
+Get-Content src\aca_hosted\app.py
+Get-Content agent.yaml
+git --no-pager diff --no-index src\standalone_api\app.py src\aca_hosted\app.py
 ```
 
 ### Optional Foundry local-host command
@@ -215,7 +214,7 @@ Use this only if you want to prove the Foundry host boots locally before deploym
 ```powershell
 $env:PYTHONPATH='src'
 $env:PORT='8088'
-python -m foundry_host.app
+python -m aca_hosted.app
 ```
 
 **Important:** if `.env` still sets `PORT=8080` for Docker workflows, override it to `8088` in the demo shell before you launch the Foundry host.
@@ -254,8 +253,8 @@ Invoke-RestMethod -Method Post -Uri https://<your-foundry-endpoint>/responses -H
 3. Start standalone API
 4. Run claim, eligibility, and benefits prompts
 5. Show `docker-compose.yml` + standalone Dockerfile
-6. Compare `standalone_api\app.py` vs `foundry_host\app.py`
-7. Show `agent.manifest.yaml`
+6. Compare `standalone_api\app.py` vs `aca_hosted\app.py`
+7. Show the root `agent.yaml`
 8. Deliver takeaways
 
 ### Short fallback line if time runs short

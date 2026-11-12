@@ -1,6 +1,6 @@
 # Deployment
 
-This repository supports two Azure deployment paths for the same claims agent.
+The repository-root `azure.yaml` is the canonical azd deployment configuration. It deploys the standalone and ACA-hosted Container Apps plus the Foundry hosted agent. The standalone script below is an optional manual path for deploying only the standalone Container App.
 
 ## Prerequisites
 
@@ -8,7 +8,7 @@ This repository supports two Azure deployment paths for the same claims agent.
 - Docker for image builds and pushes
 - An Azure Container Registry (ACR)
 - Access to the target Azure subscription and resource group
-- For the Foundry path, `azd` is optional but preferred
+- Azure Developer CLI (`azd`) for the complete three-mode deployment
 
 ## Standalone Container App
 
@@ -45,53 +45,26 @@ What the script does:
 6. injects `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_DEPLOYMENT`
 7. optionally assigns the `Cognitive Services OpenAI User` role to the app identity
 
-## Foundry-hosted Container App
+## Deploy all three modes with azd
 
-The Foundry host runs `python -m foundry_host.app` from `deployment/foundry/Dockerfile` on port `8088`.
-
-### Required runtime settings
+From the repository root, authenticate and deploy using the root `azure.yaml` and `infra/bicep`:
 
 ```bash
-export FOUNDRY_PROJECT_ENDPOINT="https://<project>.services.ai.azure.com/api/projects/<project-name>"
-export AZURE_AI_MODEL_DEPLOYMENT_NAME="gpt-4.1"
+azd auth login
+azd env new <environment-name>
+azd env set AZURE_LOCATION eastus2
+azd env set AZURE_AI_MODEL_DEPLOYMENT_NAME gpt-4.1
+azd up
 ```
 
-### Optional RBAC setting
-
-The helper script can derive the Azure OpenAI account name from a resource ID and feed it to the Bicep template when the account is in the same resource group:
-
-```bash
-export OPENAI_RESOURCE_ID="/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.CognitiveServices/accounts/<name>"
-```
-
-### Preferred deployment with `azd`
-
-```bash
-cd deployment/foundry/azd
-azd init -t foundry-langgraph-hosted-agent-sample
-azd env set FOUNDRY_PROJECT_ENDPOINT "$FOUNDRY_PROJECT_ENDPOINT"
-azd env set AZURE_AI_MODEL_DEPLOYMENT_NAME "$AZURE_AI_MODEL_DEPLOYMENT_NAME"
-azd provision
-azd deploy
-```
-
-### One-command deployment helper
-
-```bash
-deployment/foundry/deploy.sh <resource-group> <acr-name> <container-app-name> [image-tag]
-```
-
-Behavior:
-
-- if `azd` is installed, the script seeds the azd environment, runs `azd provision`, then runs `azd deploy`
-- if `azd` is not installed, the script falls back to Azure CLI, builds and pushes the Foundry image, and deploys the Bicep template directly
+`azd up` provisions shared resources and the two Container Apps from `infra/bicep/main.bicep`, then deploys all services declared in the root `azure.yaml`, including the Foundry hosted agent from `agent.yaml`. Configure Bicep parameter values with `azd env set` when the defaults are not appropriate.
 
 ## GitHub Actions automation
 
 The repository now includes two GitHub Actions workflows for Azure delivery with **OIDC/federated credentials only** — no API keys or client secrets:
 
-- `.github/workflows/deploy.yml` runs lint + tests on pushes to `main`, then provisions and deploys the Microsoft Foundry Container App with `azd provision` and `azd deploy` in the `production` environment.
-- `.github/workflows/build-image.yml` builds and pushes the standalone and Microsoft Foundry Docker images to ACR when application or Docker assets change on `main`.
+- `.github/workflows/deploy.yml` runs lint and tests on pushes to `main`, then provisions and deploys all three root `azure.yaml` services with azd from the repository root.
+- `.github/workflows/build-image.yml` separately builds and pushes the standalone and ACA-hosted/Foundry-hosted images to ACR when application or Docker assets change on `main`.
 
 ### Required GitHub environment secrets
 
@@ -100,35 +73,38 @@ Set these in the `production` environment:
 - `AZURE_CLIENT_ID`
 - `AZURE_TENANT_ID`
 - `AZURE_SUBSCRIPTION_ID`
-- `ACR_NAME` (for image publishing)
+
+The GitHub Actions identity needs permission to push to the provisioned ACR for image publishing.
 
 ### Recommended GitHub environment variables
 
 Use environment variables for non-secret deployment settings such as:
 
-- `FOUNDRY_PROJECT_ENDPOINT`
 - `AZURE_ENV_NAME`
 - `AZURE_LOCATION`
 - `AZURE_RESOURCE_GROUP`
-- `CONTAINER_APP_NAME`
+- `STANDALONE_CONTAINER_APP_NAME`
+- `ACA_HOSTED_CONTAINER_APP_NAME`
 - `CONTAINER_APPS_ENVIRONMENT_NAME`
 - `LOG_ANALYTICS_WORKSPACE_NAME`
 - `MANAGED_IDENTITY_NAME`
 - `AZURE_AI_MODEL_DEPLOYMENT_NAME`
-- `OPENAI_ACCOUNT_NAME`
+- `AI_SERVICES_NAME`
+- `FOUNDRY_PROJECT_NAME`
 - `CONTAINER_REGISTRY_NAME`
 
-At runtime, the deployed Container Apps continue to authenticate with `DefaultAzureCredential` and managed identity, so production stays passwordless end-to-end.
+The workflow uses OIDC for deployment. At runtime, the Container Apps and Foundry-hosted agent authenticate with their configured managed identities.
 
 ## Foundry infrastructure details
 
-`infra/bicep/main.bicep` now provisions:
+`infra/bicep/main.bicep` provisions:
 
 - Log Analytics workspace
 - Container Apps environment
 - user-assigned managed identity
 - Container App with external ingress on port `8088`
-- `Cognitive Services OpenAI User` role assignment when `OPENAI_ACCOUNT_NAME` is supplied
-- `AcrPull` role assignment when `CONTAINER_REGISTRY_NAME` is supplied
+- AI Services account, model deployment, and Foundry project
+- role assignments and project connections for the configured identities and registry
+- standalone and ACA-hosted Container Apps
 
-The template outputs the Container App FQDN after deployment.
+The template outputs the Container App FQDNs, Foundry project endpoint, and deployment settings after provisioning.

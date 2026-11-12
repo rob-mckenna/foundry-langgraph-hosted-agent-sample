@@ -12,7 +12,7 @@
 2. Create Dockerfile for standalone container deployment
 3. Adapt the agent for MS Foundry hosted agent service using `langchain-azure-ai[hosting]`
 4. Implement the ResponsesHostServer integration
-5. Create clear documentation showing the diff between standalone and Foundry versions
+5. Create clear documentation showing the differences between all three hosting modes
 
 ## Boundaries
 
@@ -29,11 +29,11 @@
 - Uses OpenAI API directly (or Azure OpenAI)
 
 ### Foundry Hosted Agent
-- Uses `langchain_azure_ai.agents.hosting.ResponsesHostServer`
-- Authenticates via `DefaultAzureCredential` + `AIProjectClient`
+- Shares `src/aca_hosted/app.py` and its `ResponsesHostServer` adapter with the ACA-hosted mode
+- Authenticates via `DefaultAzureCredential` and the configured managed identity in Azure
 - Exposes `/responses` endpoint (OpenAI-compatible)
-- Deployed via `azd ai agent` commands
-- Requires `agent.manifest.yaml`
+- Deployed with the repository-root `azure.yaml` and `agent.yaml` using `azd up`
+- Uses process-local LangGraph `MemorySaver` checkpoints, which are not durable across restarts
 
 ### Key Package
 ```
