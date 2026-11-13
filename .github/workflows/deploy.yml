@@ -69,6 +69,9 @@ jobs:
       - name: Install Azure Developer CLI
         uses: Azure/setup-azd@v2
 
+      - name: Install Foundry agents extension
+        run: azd extension install azure.ai.agents --source azd
+
       - name: Log in to Azure with OIDC
         uses: azure/login@v2
         with:
