@@ -196,9 +196,9 @@ Get-Content deployment\standalone\Dockerfile
 
 **Call out explicitly**
 - `kind: hosted`
-- `dockerfile: deployment/aca-hosted/Dockerfile`
 - `protocols: responses`
-- `environment_variables` configures the model deployment and managed identity.
+- `container.resources` and `startupCommand` configure the hosted runtime.
+- The `claims-foundry-agent` service in `azure.yaml` references `agent.yaml` and sets the Dockerfile and runtime environment.
 
 **PowerShell commands for this section**
 ```powershell

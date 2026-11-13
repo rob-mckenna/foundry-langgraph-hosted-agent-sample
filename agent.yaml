@@ -1,15 +1,10 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/microsoft/AgentSchema/refs/heads/main/schemas/v1.0/ContainerAgent.yaml
 kind: hosted
 name: claims-foundry-agent
-dockerfile: deployment/aca-hosted/Dockerfile
 protocols:
   - protocol: responses
     version: 1.0.0
-resources:
-  cpu: '1'
-  memory: '2Gi'
-environment_variables:
-  - name: AZURE_AI_MODEL_DEPLOYMENT_NAME
-    value: ${AZURE_AI_MODEL_DEPLOYMENT_NAME}
-  - name: USE_MANAGED_IDENTITY
-    value: "true"
+container:
+  resources:
+    cpu: '1'
+    memory: '2Gi'
+startupCommand: python -m aca_hosted.app

@@ -14,15 +14,13 @@ services:
         project: .
         host: azure.ai.agent
         language: docker
+        $ref: ./agent.yaml
         docker:
             path: deployment/aca-hosted/Dockerfile
             remoteBuild: false
-        config:
-            container:
-                resources:
-                    cpu: "1"
-                    memory: 2Gi
-                startupCommand: python -m aca_hosted.app
+        env:
+            AZURE_AI_MODEL_DEPLOYMENT_NAME: ${AZURE_AI_MODEL_DEPLOYMENT_NAME}
+            USE_MANAGED_IDENTITY: "true"
     claims-standalone-agent:
         project: .
         host: containerapp
