@@ -13,7 +13,7 @@ The graph, tools, prompts, and state definitions live under `src/claims_agent/` 
 1. **Keep the shared agent core.** Continue to build the graph with `claims_agent.graph.build_graph`; the tools and prompts remain shared.
 2. **Use the hosted adapter.** `src/aca_hosted/app.py` wraps the graph in `LangGraphHostedAgent` and starts `ResponsesHostServer`. It maps the runtime session ID to LangGraph's `thread_id`.
 3. **Configure model access.** Standalone uses `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_DEPLOYMENT`. The ACA/Foundry host uses `AZURE_AI_MODEL_DEPLOYMENT_NAME` and an Azure endpoint supplied through `AZURE_OPENAI_ENDPOINT` or `FOUNDRY_PROJECT_ENDPOINT`. The app strips `/api/projects/...` for ACA account-level access and reconstructs the project path when `FOUNDRY_PROJECT_NAME` is supplied with a base endpoint. `AZURE_AI_API_VERSION` defaults to `2024-10-21`.
-4. **Use the Foundry manifest and image.** The root `agent.yaml` defines the hosted agent; `deployment/aca-hosted/Dockerfile` is shared by the ACA and Foundry modes.
+4. **Use the Foundry definition and image.** The root `azure.yaml` references the hosted-agent definition in `agent.yaml` and configures its runtime environment; `deployment/aca-hosted/Dockerfile` is shared by the ACA and Foundry modes.
 5. **Deploy from the repository root.** The root `azure.yaml` is canonical. `azd up` provisions `infra/bicep` and deploys the standalone Container App, ACA-hosted Container App, and Foundry hosted agent.
 
 ## Runtime and state notes
